@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0" : "bbd:item/redstone_transmitter"
+    "layer0" : "bbd:item/redstone_transmitter_item"
   }
 }

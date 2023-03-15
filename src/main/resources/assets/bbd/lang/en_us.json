@@ -1,3 +1,7 @@
 {
-  "item.bbd.redstone_transmitter" : "Redstone Transmitter"
+  "item.bbd.redstone_transmitter_item": "Redstone Transmitter",
+
+  "block.bbd.redstone_receiver_block": "Redstone Receiver",
+
+  "itemgroup.bbd": "BBD Mod Items"
 }

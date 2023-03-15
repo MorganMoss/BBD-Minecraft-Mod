@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "bbd:block/redstone_receiver_block"
+    }
+  }
+}

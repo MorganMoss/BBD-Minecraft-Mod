@@ -1,9 +1,10 @@
 package za.co.bbd.minecraft;
 
 import net.fabricmc.api.ModInitializer;
+import za.co.bbd.minecraft.registry.ModBlocks;
+import za.co.bbd.minecraft.registry.ModItemGroups;
 import za.co.bbd.minecraft.registry.ModItems;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Mod implements ModInitializer {
@@ -13,7 +14,9 @@ public class Mod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        LOGGER.log(Level.INFO, "Initializing Mod");
+        LOGGER.info( "Initializing Mod for" + MOD_ID);
+        ModItemGroups.registerModItemGroups();
         ModItems.registerModItems();
+        ModBlocks.registerModBlocks();
     }
 }
