@@ -8,7 +8,7 @@ import za.co.bbd.minecraft.registry.ModItems;
 import java.util.logging.Logger;
 
 public class Mod implements ModInitializer {
-
+    //TODO: Improve this logger
     public static final Logger LOGGER = Logger.getLogger(Mod.class.getName());
     public static final String MOD_ID = "bbd";
 
