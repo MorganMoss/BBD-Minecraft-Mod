@@ -22,7 +22,9 @@
       "za.co.bbd.minecraft.Mod"
     ]
   },
-  "mixins": [],
+  "mixins": [
+    "bbd.mixins.json"
+  ],
 
   "depends": {
     "fabricloader": ">=0.14.14",
