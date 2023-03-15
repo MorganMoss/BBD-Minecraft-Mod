@@ -19,6 +19,8 @@ public class ModItems {
     //TODO: need to make a custom Item Class with an onUse of some kind
     // maybe it opens up a ui that accepts a code that you can match to a receivers code
     // then will signal to activate receivers.
+    // Alternatively, you can make there be an action on the transmitter that when used on a receiver,
+    // it handles that for you
     // https://fabricmc.net/wiki/tutorial:items
 
     //TODO: Needs a tooltip (could do the same for the receiver block)

@@ -21,8 +21,10 @@ public class ModBlocks {
     //Blocks
     //TODO: need to make a custom Block Class with an onUse of some kind
     // maybe it opens up a ui that accepts a code that you can match to a transmitters code
+    // Alternatively, have using the item on this handle that for you.
     // then will listen for a use of a transmitter.
     // https://fabricmc.net/wiki/tutorial:blocks
+    // https://fabricmc.net/wiki/tutorial:callbacks
 
     //TODO: Should have an active state, where when true - acts as a redstone source and uses another texture
     // https://fabricmc.net/wiki/tutorial:blockstate
