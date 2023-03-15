@@ -16,6 +16,13 @@ import static za.co.bbd.minecraft.registry.ModItemGroups.addToItemGroup;
 public class ModItems {
 
     //Items
+    //TODO: need to make a custom Item Class with an onUse of some kind
+    // maybe it opens up a ui that accepts a code that you can match to a receivers code
+    // then will signal to activate receivers.
+    // https://fabricmc.net/wiki/tutorial:items
+
+    //TODO: Needs a tooltip (could do the same for the receiver block)
+    // https://fabricmc.net/wiki/tutorial:tooltip
     public static final Item REDSTONE_TRANSMITTER_ITEM = registerItem(
             "redstone_transmitter_item",
             ItemGroups.REDSTONE, ModItemGroups.BBD
@@ -27,6 +34,7 @@ public class ModItems {
     }
 
     //Helper Methods
+    //Todo, replace 'new Item(new FabricItemSettings())' with an item param, so that you can have custom item classes
     private static Item registerItem(String name,  ItemGroup...groups){
         final Item registeredItem = Registry.register(
                 Registries.ITEM,

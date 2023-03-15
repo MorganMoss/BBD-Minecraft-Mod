@@ -19,9 +19,23 @@ import static za.co.bbd.minecraft.registry.ModItemGroups.addToItemGroup;
 public class ModBlocks {
 
     //Blocks
+    //TODO: need to make a custom Block Class with an onUse of some kind
+    // maybe it opens up a ui that accepts a code that you can match to a transmitters code
+    // then will listen for a use of a transmitter.
+    // https://fabricmc.net/wiki/tutorial:blocks
+
+    //TODO: Should have an active state, where when true - acts as a redstone source and uses another texture
+    // https://fabricmc.net/wiki/tutorial:blockstate
+
+    //TODO: Could make this a directional block like a repeater
+    // Would need to change how the textures work then
+    // https://fabricmc.net/wiki/tutorial:directionalblock
+
+    //TODO: (Optional) See if theres a better way to setup tool requirements than a config file.
     public static final Block REDSTONE_RECEIVER_BLOCK = registerBlock(
             "redstone_receiver_block",
-            new Block(FabricBlockSettings.of(Material.PISTON).strength(4.0f)),
+            //TODO: Probably want to customize these settings a bunch
+            new Block(FabricBlockSettings.of(Material.PISTON).requiresTool().strength(4.0f)),
             ItemGroups.REDSTONE, ModItemGroups.BBD
     );
 
