@@ -1,7 +1,6 @@
 package za.co.bbd.minecraft;
 
 import net.fabricmc.api.ModInitializer;
-import za.co.bbd.minecraft.misc.ManualChat;
 import za.co.bbd.minecraft.registry.ModBlocks;
 import za.co.bbd.minecraft.registry.ModItemGroups;
 import za.co.bbd.minecraft.registry.ModItems;
@@ -19,6 +18,5 @@ public class Mod implements ModInitializer {
         ModItemGroups.registerModItemGroups();
         ModItems.registerModItems();
         ModBlocks.registerModBlocks();
-        ManualChat.startManualChat();
     }
 }
