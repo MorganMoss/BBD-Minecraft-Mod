@@ -17,12 +17,26 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import za.co.bbd.minecraft.misc.ChatGPTMessenger;
+import za.co.bbd.minecraft.misc.Message;
+import za.co.bbd.minecraft.misc.Role;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHandler> {
+
+    //Button Texture
     private static final Identifier TEXTURE = new Identifier("textures/gui/container/villager2.png");
+
+    //This is the edit box
     private TextFieldWidget nameField;
-    private String playerResponse;
+
+    //These are constantly updated.
+    private String playerResponse = "";
+    private String villagerResponse = "";
+    private ChatGPTMessenger messenger;
+
 
     // Source code injections and overrides
     public MerchantScreenMixin(MerchantScreenHandler handler, PlayerInventory inventory, Text title) {
@@ -30,15 +44,18 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     }
 
     @Inject(
-            method = "init()V",
+            method = "init",
             at = @At("TAIL")
     )
     void additionalInit(CallbackInfo ci) {
+        while (messenger == null) {
+            messenger = ChatGPTMessenger.getCurrentMessenger();
+        }
         setupTextBox();
     }
 
     @Inject(
-            method = "drawForeground(Lnet/minecraft/client/util/math/MatrixStack;II)V",
+            method = "drawForeground",
             at = @At("TAIL")
     )
     void drawAdditionalForegroundElements(MatrixStack matrices, int mouseX, int mouseY, CallbackInfo ci){
@@ -56,8 +73,10 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ENTER){
-            ChatGPTMessenger.respond(this.playerResponse);
-            this.nameField.setText("");
+            if (!messenger.isWaitingForResponse()){
+                messenger.respond(this.playerResponse);
+                this.nameField.setText("");
+            }
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             this.client.player.closeHandledScreen();
@@ -68,22 +87,61 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
 
+
     //Draw Helper Methods
     private void drawChatGPT(MatrixStack matrices){
-        MutableText line1 = Text.literal(ChatGPTMessenger.current_message);
+        villagerResponse = "I'm thinking...";
 
-        if (this.textRenderer.getWidth(line1) > this.backgroundWidth - 10){
-            int size = ChatGPTMessenger.current_message.length();
-            int index = ChatGPTMessenger.current_message.indexOf(" ", size/2);
-            line1 = Text.literal(ChatGPTMessenger.current_message.substring(0, index));
-            Text line2 = Text.literal(ChatGPTMessenger.current_message.substring(index + 1));
-            this.textRenderer.draw(matrices, line2, 5f, -12.0f, 0xFFFFFF);
+        //TODO: This is very unoptimized... But... It runs fine?
+        List<Message> villagerMessages = (
+                messenger.getCurrentMessages()
+                        .stream()
+                        .filter(message -> message.role() == Role.ASSISTANT)
+                        .collect(Collectors.toList())
+        );
+
+        if (!messenger.isWaitingForResponse() && villagerMessages.isEmpty()){
+            messenger.respond("Introduce yourself");
+            return;
+        } else if (!villagerMessages.isEmpty()){
+            villagerResponse = villagerMessages.get(villagerMessages.size() - 1).content();
         }
 
-        this.textRenderer.draw(matrices, line1, 5f, -24.0f, 0xFFFFFF);
+        MutableText line = Text.literal(villagerResponse);
+
+        String lineStr = line.getString();
+
+        int textWidth = this.textRenderer.getWidth(line);
+        int textLength = lineStr.length();
+        int lineCount = textWidth / (this.backgroundWidth-10) + (textWidth % (this.backgroundWidth-10) != 0 ? 1 : 0);
+        int lineLength = textLength / lineCount;
+
+        int i = 0;
+        while (!lineStr.isEmpty()) {
+            String shortLine;
+            int nextSpace = lineStr.indexOf(" ", lineLength);
+
+            if (nextSpace > 0){
+                shortLine = lineStr.substring(0, nextSpace);
+                lineStr = lineStr.substring(nextSpace+1);
+            } else {
+                shortLine = lineStr.substring(0);
+                lineStr = "";
+            }
+
+            Text newLine = Text.literal(shortLine);
+            this.textRenderer.draw(matrices, newLine, 5f, -12.0f*(lineCount+1)+12.0f*(i+1), 0xFFFFFF);
+            i++;
+        }
+
     }
 
     private void drawTextBox(MatrixStack matrices, int mouseX, int mouseY){
+        this.nameField.setEditable(true);
+        if (messenger.isWaitingForResponse()){
+            this.nameField.setEditable(false);
+        }
+
         this.nameField.render(matrices, mouseX, mouseY, (float) 0.0);
     }
 
@@ -92,19 +150,21 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         RenderSystem.setShader(GameRenderer::getPositionTexProgram);
         RenderSystem.setShaderTexture(0, TEXTURE);
 
-        MerchantScreen.drawTexture(matrices, x + 5 + 35 + 20, y + 3, this.getZOffset(), this.backgroundWidth-15, this.backgroundHeight + 12, 10, 9, 512, 256);
+        MerchantScreen.drawTexture(matrices, x + 5 + 35 + 20, y + 3, this.getZOffset(), this.backgroundWidth + 5, this.backgroundHeight + 12, 10, 9, 512, 256);
     }
+
 
     //Events
     private void onUpdatePlayerResponse(String response){
         this.playerResponse = response;
     }
 
+
     //Init Helper Methods
     private void setupTextBox() {
         int i = 5;
         int j = this.backgroundHeight + 12;
-        this.nameField = new TextFieldWidget(this.textRenderer, i, j , this.backgroundWidth - 25, 12, Text.translatable("container.repair"));
+        this.nameField = new TextFieldWidget(this.textRenderer, i, j , this.backgroundWidth - 10, 12, Text.translatable("container.repair"));
         this.nameField.setFocusUnlocked(false);
         this.nameField.setEditableColor(-1);
         this.nameField.setUneditableColor(-1);
