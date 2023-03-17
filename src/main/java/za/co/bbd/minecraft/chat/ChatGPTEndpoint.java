@@ -1,10 +1,10 @@
-package za.co.bbd.minecraft.misc;
+package za.co.bbd.minecraft.chat;
 
-import com.google.gson.JsonArray;
 import kong.unirest.HttpResponse;
 import kong.unirest.JsonNode;
 import kong.unirest.Unirest;
 import za.co.bbd.minecraft.Mod;
+import za.co.bbd.minecraft.misc.Message;
 
 import java.util.List;
 import java.util.stream.Collectors;

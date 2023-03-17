@@ -1,10 +1,9 @@
-package za.co.bbd.minecraft.misc;
+package za.co.bbd.minecraft.chat;
 
 import kong.unirest.UnirestException;
 import kong.unirest.json.JSONException;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.AirBlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -14,6 +13,8 @@ import net.minecraft.nbt.NbtString;
 import net.minecraft.util.Hand;
 import net.minecraft.village.VillagerProfession;
 import za.co.bbd.minecraft.Mod;
+import za.co.bbd.minecraft.misc.Message;
+import za.co.bbd.minecraft.misc.Role;
 
 import java.util.*;
 import java.util.logging.Level;
