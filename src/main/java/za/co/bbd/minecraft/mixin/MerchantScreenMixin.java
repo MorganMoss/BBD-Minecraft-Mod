@@ -16,6 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.chat.ChatGPTMessenger;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
@@ -45,12 +46,17 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     @Inject(
             method = "init",
-            at = @At("TAIL")
+            at = @At("HEAD")
     )
     void additionalInit(CallbackInfo ci) {
         while (messenger == null) {
             messenger = ChatGPTMessenger.getCurrentMessenger();
         }
+        if (this.messenger.isWaitingForResponse()) {
+            this.client.player.closeHandledScreen();
+            return;
+        }
+        messenger.startChat();
         setupTextBox();
     }
 
@@ -78,6 +84,9 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
                 this.nameField.setText("");
             }
         }
+        if (this.messenger.isWaitingForResponse()) {
+            return true;
+        }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             this.client.player.closeHandledScreen();
         }
@@ -94,14 +103,15 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
         //TODO: This is very unoptimized... But... It runs fine?
         List<Message> villagerMessages = (
-                messenger.getCurrentMessages()
+                messenger.getChat()
                         .stream()
                         .filter(message -> message.role() == Role.ASSISTANT)
                         .collect(Collectors.toList())
         );
 
+
+
         if (!messenger.isWaitingForResponse() && villagerMessages.isEmpty()){
-            messenger.respond("Introduce yourself");
             return;
         } else if (!villagerMessages.isEmpty()){
             villagerResponse = villagerMessages.get(villagerMessages.size() - 1).content();

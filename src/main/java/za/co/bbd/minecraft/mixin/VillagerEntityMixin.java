@@ -38,6 +38,16 @@ public abstract class VillagerEntityMixin extends MerchantEntity {
     }
 
     @Inject(
+            method = "tick",
+            at = @At("TAIL")
+    )
+    void additionalTick(CallbackInfo ci){
+        if (!this.hasCustomer() && messenger.isChatActive()){
+            messenger.endChat();
+        }
+    }
+
+    @Inject(
             method = "writeCustomDataToNbt",
             at = @At("HEAD")
     )

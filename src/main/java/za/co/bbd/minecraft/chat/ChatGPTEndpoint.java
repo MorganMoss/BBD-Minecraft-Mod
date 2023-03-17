@@ -28,13 +28,14 @@ public class ChatGPTEndpoint {
 
         String body = "{\"model\":\"" + MODEL + "\",\"messages\":[" + messagesJson + "]}";
 
+        //TODO: Logging could be removed later if desired
+        Mod.LOGGER.info(new GsonBuilder().setPrettyPrinting().create().toJson(body));
+
         RequestBodyEntity request = Unirest.post(URL)
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + API_KEY)
                 .body(body);
 
-        //TODO: Logging could be removed later if desired
-        Mod.LOGGER.info(new GsonBuilder().setPrettyPrinting().create().toJson(body));
 
         HttpResponse<JsonNode> response = request.asJson();
 
