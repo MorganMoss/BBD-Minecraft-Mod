@@ -1,6 +1,5 @@
 package za.co.bbd.minecraft.chat;
 
-import com.google.gson.JsonParser;
 import kong.unirest.*;
 import com.google.gson.GsonBuilder;
 import za.co.bbd.minecraft.Mod;
