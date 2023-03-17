@@ -35,7 +35,7 @@ public class ChatGPTEndpoint {
                 .body(body);
 
         //TODO: Logging could be removed later if desired
-        Mod.LOGGER.info(new GsonBuilder().setPrettyPrinting().create().toJson(new JsonParser().parse(body)));
+        Mod.LOGGER.info(new GsonBuilder().setPrettyPrinting().create().toJson(body));
 
         HttpResponse<JsonNode> response = request.asJson();
 
