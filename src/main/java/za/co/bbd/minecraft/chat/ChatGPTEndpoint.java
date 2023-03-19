@@ -1,19 +1,42 @@
 package za.co.bbd.minecraft.chat;
 
+import com.google.common.io.Resources;
 import kong.unirest.*;
 import com.google.gson.GsonBuilder;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.misc.Message;
 
+import java.io.*;
+import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class ChatGPTEndpoint {
+    private static final String URL;
+    private static final String API_KEY;
+    private static final String MODEL;
 
-    private static final String URL = "https://api.openai.com/v1/chat/completions";
-    private static final String API_KEY = "";
+    static {
+        Properties properties = new Properties();
 
-    private static final String MODEL = "gpt-3.5-turbo";
+        try (final Reader reader = new FileReader(new File(Resources.getResource("config/chat.properties").toURI()))) {
+            properties.load(reader);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+        URL = properties.getProperty("url", "https://api.openai.com/v1/chat/completions");
+        API_KEY = properties.getProperty("api-key");
+        MODEL = properties.getProperty("model", "gpt-3.5-turbo");
+
+        if (API_KEY == null){
+            throw new RuntimeException(
+                    "You require a ChatGPT API key to use this mod!\n"
+                    + "Visit https://platform.openai.com/account/api-keys"
+            );
+        }
+    }
 
     /**
      * Takes a list of messages as context to formulate the chatbots next response
@@ -44,4 +67,10 @@ public class ChatGPTEndpoint {
         return response;
     }
 
+    /**
+     * This is run in Mod, so that the static initializer is run on start-up
+     */
+    public static void initialize() {
+        Mod.LOGGER.info("Loaded Properties for ChatGPT Endpoint");
+    }
 }
