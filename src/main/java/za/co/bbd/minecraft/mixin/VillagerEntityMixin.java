@@ -13,11 +13,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.chat.ChatGPTMessenger;
+import za.co.bbd.minecraft.interfaces.VillagerActor;
+import za.co.bbd.minecraft.misc.Action;
 
 
 @Mixin(VillagerEntity.class)
-public abstract class VillagerEntityMixin extends MerchantEntity {
+public abstract class VillagerEntityMixin extends MerchantEntity implements VillagerActor {
     //Injected Class Variables
     private final ChatGPTMessenger messenger = new ChatGPTMessenger((VillagerEntity) (Object) this);
 
@@ -42,7 +45,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity {
             at = @At("TAIL")
     )
     void additionalTick(CallbackInfo ci){
-        if (!this.hasCustomer() && messenger.isChatActive()){
+        if (!this.hasCustomer() && messenger.isChatting()){
             messenger.endChat();
         }
     }
@@ -66,6 +69,9 @@ public abstract class VillagerEntityMixin extends MerchantEntity {
         }
     }
 
-
-
+    //Custom Methods
+    @Override
+    public void performAction(Action action) {
+            Mod.LOGGER.info(action.action);
+    }
 }

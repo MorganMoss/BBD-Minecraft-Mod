@@ -16,7 +16,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.chat.ChatGPTMessenger;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
@@ -52,7 +51,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         while (messenger == null) {
             messenger = ChatGPTMessenger.getCurrentMessenger();
         }
-        if (this.messenger.isWaitingForResponse()) {
+        if (this.messenger.isMemorizing()) {
             this.client.player.closeHandledScreen();
             return;
         }
@@ -79,12 +78,12 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ENTER){
-            if (!messenger.isWaitingForResponse()){
+            if (!messenger.isReplying()){
                 messenger.respond(this.playerResponse);
                 this.nameField.setText("");
             }
         }
-        if (this.messenger.isWaitingForResponse()) {
+        if (this.messenger.isReplying()) {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -111,7 +110,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
 
 
-        if (!messenger.isWaitingForResponse() && villagerMessages.isEmpty()){
+        if (!messenger.isReplying() && villagerMessages.isEmpty()){
             return;
         } else if (!villagerMessages.isEmpty()){
             villagerResponse = villagerMessages.get(villagerMessages.size() - 1).content();
@@ -126,6 +125,8 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         int lineCount = textWidth / (this.backgroundWidth-10) + (textWidth % (this.backgroundWidth-10) != 0 ? 1 : 0);
         int lineLength = textLength / lineCount;
 
+
+        //TODO: Add a scrollbar x3
         int i = 0;
         while (!lineStr.isEmpty()) {
             String shortLine;
@@ -148,7 +149,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     private void drawTextBox(MatrixStack matrices, int mouseX, int mouseY){
         this.nameField.setEditable(true);
-        if (messenger.isWaitingForResponse()){
+        if (messenger.isReplying()){
             this.nameField.setEditable(false);
         }
 

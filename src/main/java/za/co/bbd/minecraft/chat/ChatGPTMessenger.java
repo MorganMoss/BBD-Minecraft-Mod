@@ -4,7 +4,6 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import kong.unirest.UnirestException;
 import kong.unirest.json.JSONException;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -13,10 +12,12 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
-import net.minecraft.network.packet.s2c.play.EntitiesDestroyS2CPacket;
 import net.minecraft.util.Hand;
 import net.minecraft.village.VillagerProfession;
 import za.co.bbd.minecraft.Mod;
+import za.co.bbd.minecraft.interfaces.VillagerActor;
+import za.co.bbd.minecraft.misc.Action;
+import za.co.bbd.minecraft.misc.Flag;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
 
@@ -33,7 +34,6 @@ public class ChatGPTMessenger {
             "Reserved", "Assertive", "Reflective", "Reliable", "Open-minded",
             "Arrogant", "Stubborn", "Neurotic", "Machiavellian", "Narcissistic"
     ));
-
     private static final List<String> names = Arrays.asList(
             "Abby", "Ada", "Adalyn", "Adam", "Addison", "Adeline", "Adrian", "Aiden", "Aimee",
             "Alanis", "Alba", "Albert", "Alec", "Alejandro", "Alex", "Alexa", "Alexander", "Alexandra",
@@ -125,13 +125,15 @@ public class ChatGPTMessenger {
             );
 
 
-            //Active Chat
+    //Active Chat
     private static ChatGPTMessenger currentMessenger = null;
-    private String lastCustomer = "";
-    private PlayerEntity lastCustomerEntity = null;
+    private String customerName = "";
+    private PlayerEntity customer = null;
+
 
     //Villager
     private final VillagerEntity villager;
+
 
     //Persistent Data
     private HashMap<String, List<Message>> chats = new HashMap<>();
@@ -139,17 +141,39 @@ public class ChatGPTMessenger {
     private String personality = generatePersonality();
     private String name = generateName();
 
+
     //Flags
-    private boolean isProcessing = false;
-    private boolean isChatActive = false;
+    private final Flag isReplying = new Flag(false);
+    private final Flag isChatting = new Flag(false);
+    private final Flag isMemorizing = new Flag(false);
+    private final Flag isActing = new Flag(false);
+
+    /**
+     * The lock for the Endpoint call. When False, it is currently waiting for chatGPT to respond.
+     */
+    @Nonnull
+    public boolean isReplying(){
+        return isReplying.getFlag();
+    }
+
+    @Nonnull
+    public boolean isChatting() {
+        return isChatting.getFlag();
+    }
+
+    @Nonnull
+    public boolean isMemorizing(){
+        return isMemorizing.getFlag();
+    }
+
 
     //Constructor
     public ChatGPTMessenger(VillagerEntity villager){
         this.villager = villager;
     }
 
-    //Changing Active Villager Chat
 
+    //Changing Active Villager Chat
     /**
      * When this is called, the messenger that set as current (when a villager is interacted with)
      * will be returned, and follow-up calls to this before another villager is interacted with will be null
@@ -166,6 +190,7 @@ public class ChatGPTMessenger {
         ChatGPTMessenger.currentMessenger = currentMessenger;
     }
 
+
     //Chat Handling
     /**
      * Gets the history of the player currently interacting with this messengers' villager.
@@ -173,24 +198,11 @@ public class ChatGPTMessenger {
      */
     @Nonnull
     public List<Message> getChat(){
-        if (!updateLastCustomer()){
+        if (!updateCustomer()){
             throw new RuntimeException("There is no customer interacting with this villager!");
         }
 
-        return chats.getOrDefault(lastCustomer, new ArrayList<>());
-    }
-
-    /**
-     * The lock for the Endpoint call. When False, it is currently waiting for chatGPT to respond.
-     */
-    @Nonnull
-    public boolean isWaitingForResponse(){
-        return isProcessing;
-    }
-
-    @Nonnull
-    public boolean isChatActive() {
-        return isChatActive;
+        return chats.getOrDefault(customerName, new ArrayList<>());
     }
 
     /**
@@ -201,68 +213,71 @@ public class ChatGPTMessenger {
         List<Message> system_messages = getAllCommonLang();
 
         List<Message> customer_messages = getChat();
-        customer_messages.add(new Message(Role.USER, content));
+        customer_messages.add(new Message(Role.USER, content + " (In Minecraft; Keep your answer short)"));
 
         List<Message> combined_messages = new ArrayList<>();
         combined_messages.addAll(system_messages);
         combined_messages.addAll(customer_messages);
 
-        Thread thread = new Chat(combined_messages);
+        Thread thread = new Chat(combined_messages, isReplying);
         thread.start();
+        act();
     }
 
     public void startChat(){
-        if (isChatActive) {
+        if (isChatting() || isReplying() || !getChat().isEmpty()) {
             return;
         }
 
-        if (!updateLastCustomer()){
+        if (!updateCustomer()){
             throw new RuntimeException("There is no customer interacting with this villager!");
         }
 
-        isChatActive = true;
+        isChatting.setFlag(true);
         List<Message> messages = getAllCommonLang();
         messages.addAll(getChat());
         messages.addAll(getChatStarterAsLang());
 
-        Thread thread = new Chat(messages);
+        Thread thread = new Chat(messages, isReplying);
         thread.start();
     }
 
     public void endChat(){
-        if (!isChatActive) {
+        if (!isChatting()) {
             return;
         }
-        isChatActive = false;
+        isChatting.setFlag(false);
 
-        createMemory();
+        memorize();
     }
 
     /**
      * @return If there is a customer, then it returns true
      */
-    private boolean updateLastCustomer() {
+    private boolean updateCustomer() {
         if (villager.hasCustomer()) {
-            lastCustomerEntity = villager.getCustomer();
+            customer = villager.getCustomer();
 
 
-            String customer = lastCustomerEntity.getEntityName();
+            String customer = this.customer.getEntityName();
 
             if (customer != null) {
-                lastCustomer = customer;
+                customerName = customer;
             }
         }
 
-        return !lastCustomer.isEmpty();
+        return !customerName.isEmpty();
     }
 
     /**
      * updates the chat of this villager's current customer
      */
     private void updateChat(@Nonnull Message newMessage){
-        var c = chats.getOrDefault(lastCustomer, new ArrayList<>());
+        var c = chats.getOrDefault(customerName, new ArrayList<>());
         c.add(newMessage);
-        chats.put(lastCustomer, c);
+        chats.put(customerName, c);
+
+
     }
 
     /**
@@ -270,19 +285,35 @@ public class ChatGPTMessenger {
      * clears their previous chat history of that customer
      */
     private void updateMemories(@Nonnull Message newMessage){
-        memories.put(lastCustomer, newMessage);
-        chats.get(lastCustomer).clear();
+        memories.put(customerName, newMessage);
+        chats.get(customerName).clear();
     }
 
+    private void memorize(){
+        List<Message> messages = new ArrayList<>();
 
-    private void createMemory(){
-        List<Message> messages = getAllCommonLang();
+        messages.addAll(getBaseInfoAsLang());
+        messages.addAll(getCustomerInfoAsLang());
         messages.addAll(getChat());
         messages.addAll(getMemoryPromptAsLang());
 
-        Thread thread = new Memorize(messages);
+        Thread thread = new Memorize(messages, isMemorizing);
         thread.start();
     }
+
+    private void act(){
+        List<Message> messages = new ArrayList<>();
+
+        messages.addAll(getBaseInfoAsLang());
+        messages.addAll(getMemoriesOfCustomerAsLang());
+        messages.addAll(getCustomerInfoAsLang());
+        messages.addAll(getChat());
+        messages.addAll(getActionPrompt());
+
+        Thread thread = new Act(messages, isActing);
+        thread.start();
+    }
+
 
     //System Instructions as Natural Language
     @Nonnull
@@ -296,6 +327,21 @@ public class ChatGPTMessenger {
         common_system_messages.addAll(getMemoriesAsLang());
 
         return common_system_messages;
+    }
+
+    @Nonnull
+    private List<Message> getActionPrompt(){
+        final Role role = Role.SYSTEM;
+        final List<Message> initialMessages = new ArrayList<>();
+
+        String actions = Arrays
+                .stream(Action.values())
+                .map(action -> action.action)
+                .collect(Collectors.joining(", "));
+
+        initialMessages.add(new Message(role,"Pick an option (Only say the option). It is what you will do nextThat: " + actions));
+
+        return initialMessages;
     }
 
     @Nonnull
@@ -313,8 +359,8 @@ public class ChatGPTMessenger {
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
 
-        initialMessages.add(new Message(role,"The player has left."));
-        initialMessages.add(new Message(role,"Make notes about the players behaviour and how you would feel toward them as a villager"));
+        initialMessages.add(new Message(role,"The player has stopped talking to you."));
+        initialMessages.add(new Message(role,"Make notes about the players behaviour and how you would feel toward them as a villager, keep note of what you previously remember too"));
 
         return initialMessages;
     }
@@ -334,7 +380,23 @@ public class ChatGPTMessenger {
                 .map(player -> player + ": " + memories.get(player).content())
                 .collect(Collectors.joining("; "));
 
-        initialMessages.add(new Message(role, "You remember the following about respective players: " + remembered));
+        initialMessages.add(new Message(role, "You have some memories; you remember the following about respective players: " + remembered));
+
+        return initialMessages;
+    }
+
+    @Nonnull
+    private List<Message> getMemoriesOfCustomerAsLang(){
+        if (!memories.containsKey(customerName)){
+            return new ArrayList<>();
+        }
+
+        final Role role = Role.SYSTEM;
+        final List<Message> initialMessages = new ArrayList<>();
+
+        String remembered = memories.get(customerName).content();
+
+        initialMessages.add(new Message(role, "You have some memories; you remember the following about this customer: " + remembered));
 
         return initialMessages;
     }
@@ -396,10 +458,10 @@ public class ChatGPTMessenger {
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
 
-        initialMessages.add(new Message(role, "You are talking to the Player named " + lastCustomer));
+        initialMessages.add(new Message(role, "You are talking to the Player named " + customerName));
         initialMessages.add(new Message(role, "The Player is wanting to trade with you"));
 
-        final int reputation = villager.getReputation(lastCustomerEntity);
+        final int reputation = villager.getReputation(customer);
 
         if (reputation >= 15) {
             initialMessages.add(new Message(role, "This player as a hero, you love them"));
@@ -409,7 +471,7 @@ public class ChatGPTMessenger {
             initialMessages.add(new Message(role, "You don't know this player"));
         }
 
-        ItemStack itemStack = lastCustomerEntity.getStackInHand(Hand.MAIN_HAND);
+        ItemStack itemStack = customer.getStackInHand(Hand.MAIN_HAND);
         initialMessages.add(new Message(role, "The player is holding " + itemStack.getName().getString()));
 
         return initialMessages;
@@ -559,16 +621,18 @@ public class ChatGPTMessenger {
         this.memories = parsePlayerMessage(data.getCompound("memories"));
     }
 
+
     //Threading
     private class Chat extends Thread{
         private List<Message> chat;
+        protected Flag flag;
 
         @Override
         public void run() {
-            if (isProcessing){
+            if (flag.getFlag()){
                 return;
             }
-            isProcessing = true;
+            flag.setFlag(true);
             String result = "";
             try {
                     var response = ChatGPTEndpoint.post(chat);
@@ -588,7 +652,7 @@ public class ChatGPTMessenger {
                 result = "'Sadness... My internet brain has left me... ;w;'";
                 Mod.LOGGER.log(Level.SEVERE, "ChatGPT Service has failed.", e);
             } finally {
-                isProcessing = false;
+                flag.setFlag(false);
                 onFinish(result);
             }
         }
@@ -597,7 +661,8 @@ public class ChatGPTMessenger {
             updateChat(new Message(Role.ASSISTANT, response));
         }
 
-        public Chat(@Nonnull List<Message> chat) {
+        public Chat(@Nonnull List<Message> chat, @Nonnull Flag flag) {
+            this.flag = flag;
             this.chat = chat;
         }
 
@@ -605,13 +670,29 @@ public class ChatGPTMessenger {
 
     private class Memorize extends Chat {
 
-        public Memorize(List<Message> chat) {
-            super(chat);
+        public Memorize(List<Message> chat, Flag flag) {
+            super(chat, flag);
         }
 
         @Override
         protected void onFinish(String response) {
             updateMemories(new Message(Role.SYSTEM, response));
+        }
+    }
+
+    private class Act extends Chat {
+        public Act(List<Message> chat, Flag flag){
+            super(chat, flag);
+        }
+
+        @Override
+        protected void onFinish(String response) {
+            ((VillagerActor) villager).performAction(
+                    Arrays
+                    .stream(Action.values())
+                    .filter(action -> response.toLowerCase().contains(action.action))
+                    .findFirst().orElse(Action.DO_NOTHING)
+            );
         }
     }
 }
