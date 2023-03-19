@@ -650,7 +650,7 @@ public class ChatGPTMessenger {
 
             } catch (JSONException | UnirestException | NullPointerException e){
                 result = "'Sadness... My internet brain has left me... ;w;'";
-                Mod.LOGGER.log(Level.SEVERE, "ChatGPT Service has failed.", e);
+                Mod.LOGGER.error("ChatGPT Service has failed.", e);
             } finally {
                 flag.setFlag(false);
                 onFinish(result);
