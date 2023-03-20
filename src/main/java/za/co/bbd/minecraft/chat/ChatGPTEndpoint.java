@@ -2,7 +2,7 @@ package za.co.bbd.minecraft.chat;
 
 import com.google.common.io.Resources;
 import kong.unirest.*;
-import com.google.gson.GsonBuilder;
+import kong.unirest.json.JSONObject;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.misc.Message;
 
@@ -16,6 +16,7 @@ public class ChatGPTEndpoint {
     private static final String URL;
     private static final String API_KEY;
     private static final String MODEL;
+    private static final Boolean PRINT_JSON;
 
     static {
         Properties properties = new Properties();
@@ -29,6 +30,7 @@ public class ChatGPTEndpoint {
         URL = properties.getProperty("url", "https://api.openai.com/v1/chat/completions");
         API_KEY = properties.getProperty("api-key");
         MODEL = properties.getProperty("model", "gpt-3.5-turbo");
+        PRINT_JSON = Boolean.getBoolean(properties.getProperty("print-json", "false"));
 
         if (API_KEY == null || API_KEY.equals("<insert api key>")){
             throw new RuntimeException(
@@ -50,22 +52,36 @@ public class ChatGPTEndpoint {
                 .collect(Collectors.joining(","));
 
         String body = "{\"model\":\"" + MODEL + "\",\"messages\":[" + messagesJson + "]}";
-
-        //TODO: Logging could be removed later if desired
-        Mod.LOGGER.info(new GsonBuilder().setPrettyPrinting().create().toJson(body));
+            if (PRINT_JSON){
+                Mod.LOGGER.info(new JSONObject(body).toString(2));
+            }
 
         RequestBodyEntity request = Unirest.post(URL)
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + API_KEY)
+                .socketTimeout(6000)
                 .body(body);
 
+        for (int i = 0; i < 5; i++){
+            try {
+                HttpResponse<JsonNode> response = request.asJson();
+                if (PRINT_JSON){
+                     Mod.LOGGER.info(response.getBody().toPrettyString());
+                }
 
-        HttpResponse<JsonNode> response = request.asJson();
-
-        Mod.LOGGER.info(response.getBody().toPrettyString());
-
-        return response;
+                return response;
+            } catch (UnirestException e) {
+                if (i < 4){
+                    Mod.LOGGER.info("Retrying...");
+                } else {
+                    Mod.LOGGER.error("ChatGPT Failed", e);
+                }
+            }
+        }
+        return null;
     }
+
+
 
     /**
      * This is run in Mod, so that the static initializer is run on start-up
