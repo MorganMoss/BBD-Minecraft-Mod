@@ -30,7 +30,7 @@ public class ChatGPTEndpoint {
         API_KEY = properties.getProperty("api-key");
         MODEL = properties.getProperty("model", "gpt-3.5-turbo");
 
-        if (API_KEY == null){
+        if (API_KEY == null || API_KEY.equals("<insert api key>")){
             throw new RuntimeException(
                     "You require a ChatGPT API key to use this mod!\n"
                     + "Visit https://platform.openai.com/account/api-keys"
