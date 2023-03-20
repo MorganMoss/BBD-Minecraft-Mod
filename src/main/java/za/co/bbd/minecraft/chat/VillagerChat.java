@@ -2,8 +2,10 @@ package za.co.bbd.minecraft.chat;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import kong.unirest.UnirestException;
 import kong.unirest.json.JSONException;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -13,9 +15,13 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.VillagerProfession;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.interfaces.VillagerActor;
+import za.co.bbd.minecraft.interfaces.VillagerChatHolder;
 import za.co.bbd.minecraft.misc.Action;
 import za.co.bbd.minecraft.misc.Flag;
 import za.co.bbd.minecraft.misc.Message;
@@ -123,22 +129,24 @@ public class VillagerChat {
             "Finn", "Eden", "Dylan", "Cassidy", "Brinley"
             );
 
+    private static final float VISION_RADIUS = 50;
 
     //Active Chat
     private static VillagerChat currentMessenger = null;
     private String customerName = "";
-    private PlayerEntity customer = null;
+    public PlayerEntity customer = null;
 
 
     //Villager
-    private final VillagerEntity villager;
+    public final VillagerEntity villager;
 
 
     //Persistent Data
-    private HashMap<String, List<Message>> chats = new HashMap<>();
-    private HashMap<String, Message> memories = new HashMap<>();
-    private String personality = generatePersonality();
-    private String name = generateName();
+    @Nonnull private HashMap<String, List<Message>> chats = new HashMap<>();
+    @Nonnull private HashMap<String, Message> memories = new HashMap<>();
+    @Nullable private Message globalMemory = null;
+    @Nonnull private String personality = generatePersonality();
+    @Nonnull private String name = generateName();
 
 
     //Flags
@@ -285,22 +293,44 @@ public class VillagerChat {
 
         Thread thread = new Chat(combined_messages, isReplying);
         thread.start();
+
         act();
+
     }
 
     /**
      * Takes the last chat and previous memory of that and summarizes it into a new memory
      */
     private void memorize(){
+        int wordCount = memories
+                .values()
+                .stream()
+                .map(message -> message.content().split(" ").length)
+                .reduce(Integer::sum)
+                .orElse(0);
+
         List<Message> messages = new ArrayList<>();
 
         messages.addAll(getBaseInfoAsLang());
         messages.addAll(getCustomerInfoAsLang());
         messages.addAll(getChat());
-        messages.addAll(getMemoryPromptAsLang());
 
-        Thread thread = new Memorize(messages, isMemorizing);
-        thread.start();
+        if (wordCount > 300){
+            messages.addAll(getMemoriesAsLang());
+            messages.addAll(getGlobalMemoryPromptAsLang());
+
+            Thread thread = new GlobalMemorize(messages, isMemorizing);
+            thread.start();
+        } else {
+            messages.addAll(getMemoriesOfCustomerAsLang());
+            messages.addAll(getMemoryPromptAsLang());
+
+            Thread thread = new Memorize(messages, isMemorizing);
+            thread.start();
+        }
+
+
+
     }
 
     /**
@@ -344,7 +374,7 @@ public class VillagerChat {
                 .map(action -> action.action)
                 .collect(Collectors.joining(", "));
 
-        initialMessages.add(new Message(role,"Pick an option (Only say the option). It is what you will do nextThat: " + actions));
+        initialMessages.add(new Message(role,"Pick an option (Only say the option). It is what you will do next: " + actions));
 
         return initialMessages;
     }
@@ -365,27 +395,40 @@ public class VillagerChat {
         final List<Message> initialMessages = new ArrayList<>();
 
         initialMessages.add(new Message(role,"The player has stopped talking to you."));
-        initialMessages.add(new Message(role,"Make notes about the players behaviour and how you would feel toward them as a villager, keep note of what you previously remember too"));
+        initialMessages.add(new Message(role,"Make notes about the players behaviour and how you would feel toward them as a villager, keep note of what you previously remember too. Keep it as short as possible without missing details."));
+
+        return initialMessages;
+    }
+
+    @Nonnull
+    private List<Message> getGlobalMemoryPromptAsLang(){
+        final Role role = Role.SYSTEM;
+        final List<Message> initialMessages = new ArrayList<>();
+
+        initialMessages.add(new Message(role,"The player has stopped talking to you."));
+        initialMessages.add(new Message(role,"Make a summary of everything you know from the memories you were given and what the player has said. Keep it under 500 words"));
 
         return initialMessages;
     }
 
     @Nonnull
     private List<Message> getMemoriesAsLang(){
-        if (memories.isEmpty()){
-            return new ArrayList<>();
-        }
-
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
 
-        String remembered = memories
-                .keySet()
-                .stream()
-                .map(player -> player + ": " + memories.get(player).content())
-                .collect(Collectors.joining("; "));
+        if (globalMemory != null){
+            initialMessages.add(new Message(role, "You have some memories, You remember: " + globalMemory.content()));
+        }
 
-        initialMessages.add(new Message(role, "You have some memories; you remember the following about respective players: " + remembered));
+        if (!memories.isEmpty()){
+            String remembered = memories
+                    .keySet()
+                    .stream()
+                    .map(player -> player + ": " + memories.get(player).content())
+                    .collect(Collectors.joining("; "));
+
+            initialMessages.add(new Message(role, "You also remember the following about respective players: " + remembered));
+        }
 
         return initialMessages;
     }
@@ -410,28 +453,29 @@ public class VillagerChat {
     private List<Message> getTradesAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
-
-        String trades = villager
-                .getOffers()
+        ClientWorld world = MinecraftClient.getInstance().world;
+        String trades = tradeOffersToString(villager.getOffers());
+        Vec3d pos = villager.getPos();
+        List<VillagerEntity> entities = world.getOtherEntities(villager, new Box(pos.subtract(VISION_RADIUS, VISION_RADIUS, VISION_RADIUS), pos.add(VISION_RADIUS, VISION_RADIUS, VISION_RADIUS)))
                 .stream()
-                .map(tradeOffer ->
-                        tradeOffer.getAdjustedFirstBuyItem().getCount()
-                        + " " +tradeOffer.getAdjustedFirstBuyItem().getName().getString()
-                        + (
-                            (!tradeOffer.getSecondBuyItem().isOf(Items.AIR)) ?
-                                    " and "
-                                    + tradeOffer.getSecondBuyItem().getCount()
-                                    + " "
-                                    + tradeOffer.getSecondBuyItem().getName().getString()
-                            :
-                                    ""
-                        )
-                        + " in return for "
-                        + tradeOffer.getSellItem().getName().getString()
-                )
-                .collect(Collectors.joining("; "));
+                .filter(entity -> entity.getType().equals(EntityType.VILLAGER))
+                .map(entity -> (VillagerEntity) entity)
+                .filter(villagerEntity -> !villagerEntity.getOffers().isEmpty())
+                .collect(Collectors.toList());
 
         initialMessages.add(new Message(role,"You have the following trades: " + trades));
+        if (!entities.isEmpty()){
+            initialMessages.add(new Message(role,"There are a few nearby villagers:"));
+            initialMessages.addAll(
+                    entities
+                            .stream()
+                            .map(villagerEntity -> ((VillagerChatHolder) villagerEntity).getChat().name + " has the following trades: " + tradeOffersToString(villagerEntity.getOffers()) + ". They are " + villagerEntity.getPos().distanceTo(pos))
+                            .map(content -> new Message(Role.SYSTEM, content))
+                            .collect(Collectors.toList())
+            );
+        }
+
+
 
         return initialMessages;
     }
@@ -448,39 +492,57 @@ public class VillagerChat {
         }
 
         switch (villager.getVillagerData().getLevel()) {
-            case 1 -> initialMessages.add(new Message(role, "You a novice in your profession"));
-            case 2 -> initialMessages.add(new Message(role, "You an apprentice in your profession"));
-            case 3 -> initialMessages.add(new Message(role, "You a journeyman in your profession"));
-            case 4 -> initialMessages.add(new Message(role, "You an expert in your profession"));
-            case 5 -> initialMessages.add(new Message(role, "You a master in your profession"));
+            case 1 -> initialMessages.add(new Message(role, "You are a novice in your profession"));
+            case 2 -> initialMessages.add(new Message(role, "You are an apprentice in your profession"));
+            case 3 -> initialMessages.add(new Message(role, "You are a journeyman in your profession"));
+            case 4 -> initialMessages.add(new Message(role, "You are an expert in your profession"));
+            case 5 -> initialMessages.add(new Message(role, "You are a master in your profession"));
         }
 
         return initialMessages;
     }
 
     @Nonnull
-    private List<Message> getCustomerInfoAsLang(){
+    private List<Message> getCustomerInfoAsLang() {
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
 
-        initialMessages.add(new Message(role, "You are talking to the Player named " + customerName));
-        initialMessages.add(new Message(role, "The Player is wanting to trade with you"));
+        boolean remembers = memories.get(customerName) != null;
+
+        if (globalMemory != null){
+            remembers = remembers || globalMemory.content().contains(customerName);
+        }
+
+        if (remembers){
+            initialMessages.add(new Message(role, "You are talking to " + customerName + " again."));
+        } else {
+            initialMessages.add(new Message(role, "You are talking to " + customerName + ". This is your first time meeting them"));
+        }
 
         final int reputation = villager.getReputation(customer);
 
         if (reputation >= 15) {
-            initialMessages.add(new Message(role, "This player as a hero, you love them"));
+            initialMessages.add(new Message(role, customerName + " is a hero, you love them"));
+        } else if (reputation >= 10) {
+            initialMessages.add(new Message(role, customerName + " is a great person"));
+        } else if (reputation >= 5) {
+            initialMessages.add(new Message(role, customerName + " is nice"));
         } else if (reputation <= -15) {
-            initialMessages.add(new Message(role, "This player as a villain, you hate them"));
+            initialMessages.add(new Message(role, customerName + " is a villain, you hate and are scared of them"));
+        } else if (reputation <= -10) {
+            initialMessages.add(new Message(role, customerName + " is awful, you really dislike them"));
+        } else if (reputation <= -5) {
+            initialMessages.add(new Message(role, customerName + " is unpleasant"));
         } else {
-            initialMessages.add(new Message(role, "You don't know this player"));
+            initialMessages.add(new Message(role, "You are neutral to " + customerName));
         }
+
 
         ItemStack itemStack = customer.getStackInHand(Hand.MAIN_HAND);
         if (itemStack.getItem().equals(Items.AIR)){
-            initialMessages.add(new Message(role, "The player is holding nothing"));
+            initialMessages.add(new Message(role, customerName + " is holding nothing"));
         } else {
-            initialMessages.add(new Message(role, "The player is holding " + itemStack.getName().getString()));
+            initialMessages.add(new Message(role, customerName + " is holding " + itemStack.getName().getString()));
         }
 
         return initialMessages;
@@ -490,18 +552,45 @@ public class VillagerChat {
     private List<Message> getBaseInfoAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
+        ClientWorld world = MinecraftClient.getInstance().world;
+        String formattedHour = world.getTime() / 1000 + ":00";
+        if (formattedHour.length() == 4){
+            formattedHour = "0" + formattedHour;
+        }
+
         initialMessages.add(new Message(role, "Respond only in a single paragraph. Keep it short."));
         initialMessages.add(new Message(role, "You are a villager in Minecraft."));
         initialMessages.add(new Message(role, "You must pretend to have emotions and opinions that a villager."));
         initialMessages.add(new Message(role, "Your name is " + name));
         initialMessages.add(new Message(role, "You are " + personality));
         initialMessages.add(new Message(role, "Don't ever say that you're an AI. You do not interact with humans. Only Minecraftians"));
-        initialMessages.add(new Message(role, "You are mortal. You are intimidated or scared of weapons"));
-
+        initialMessages.add(new Message(role, "You are mortal. You are intimidated or scared of weapons and it's dangerous at night"));
+        initialMessages.add(new Message(role, "The time is (in 24 hour format) " + formattedHour));
 
         return initialMessages;
     }
 
+    //Natural Language Helpers
+    private String tradeOffersToString(TradeOfferList tradeOffers){
+        return tradeOffers
+                .stream()
+                .map(tradeOffer ->
+                        tradeOffer.getAdjustedFirstBuyItem().getCount()
+                                + " " +tradeOffer.getAdjustedFirstBuyItem().getName().getString()
+                                + (
+                                (!tradeOffer.getSecondBuyItem().isOf(Items.AIR)) ?
+                                        " and "
+                                                + tradeOffer.getSecondBuyItem().getCount()
+                                                + " "
+                                                + tradeOffer.getSecondBuyItem().getName().getString()
+                                        :
+                                        ""
+                        )
+                                + " in return for "
+                                + tradeOffer.getSellItem().getName().getString()
+                )
+                .collect(Collectors.joining("; "));
+    }
 
     //Generators
     @Nonnull
@@ -607,6 +696,9 @@ public class VillagerChat {
 
         data.put("personality" , NbtString.of(personality));
         data.put("name" , NbtString.of(name));
+        if (globalMemory != null){
+            data.put("global-memory", NbtString.of(globalMemory.content()));
+        }
         if (chats != null){
             data.put("chats", generatePlayerMessageList(chats));
         } else {
@@ -624,17 +716,25 @@ public class VillagerChat {
     public void parsePersistentChatGPTData(@Nonnull NbtCompound data){
         this.personality = data.getString("personality");
         this.name = data.getString("name");
+        this.globalMemory = new Message(Role.SYSTEM, data.getString("global-memory"));
 
         this.chats = parsePlayerMessageList(data.getCompound("chats"));
 
         this.memories = parsePlayerMessage(data.getCompound("memories"));
+
     }
 
 
     //Threading
-    private class Chat extends Thread{
+    private abstract class GetResponse extends Thread{
         private List<Message> chat;
         protected Flag flag;
+
+        public GetResponse(@Nonnull List<Message> chat, @Nonnull Flag flag) {
+            setName(this.getClass().getSimpleName());
+            this.flag = flag;
+            this.chat = chat;
+        }
 
         @Override
         public void run() {
@@ -642,9 +742,12 @@ public class VillagerChat {
                 return;
             }
             flag.setFlag(true);
+
+            Mod.LOGGER.info("Word Count = " + chat.stream().map(message -> message.content().split(" ").length).reduce(Integer::sum).orElse(0));
+
             String result = "";
             try {
-                    var response = ChatGPTEndpoint.post(chat);
+                var response = ChatGPTEndpoint.post(chat);
 
                 result = response
                         .getBody()
@@ -657,27 +760,33 @@ public class VillagerChat {
                         .replace("\"", "'")
                         .strip();
 
-            } catch (JSONException | UnirestException | NullPointerException e){
+            } catch (JSONException | NullPointerException e){
                 result = "'Sadness... My internet brain has left me... ;w;'";
-                Mod.LOGGER.error("ChatGPT Service has failed.", e);
+                Mod.LOGGER.error("ChatGPT Response is unreadable.", e);
             } finally {
                 flag.setFlag(false);
                 onFinish(result);
+                Mod.LOGGER.info("Done");
             }
         }
 
+        protected abstract void onFinish(String response);
+
+    }
+
+    private class Chat extends GetResponse{
+        @Override
         protected void onFinish(String response){
             updateChat(new Message(Role.ASSISTANT, response));
         }
 
         public Chat(@Nonnull List<Message> chat, @Nonnull Flag flag) {
-            this.flag = flag;
-            this.chat = chat;
+            super(chat, flag);
         }
 
     }
 
-    private class Memorize extends Chat {
+    private class Memorize extends GetResponse {
 
         public Memorize(List<Message> chat, Flag flag) {
             super(chat, flag);
@@ -689,7 +798,20 @@ public class VillagerChat {
         }
     }
 
-    private class Act extends Chat {
+    private class GlobalMemorize extends GetResponse {
+
+        public GlobalMemorize(List<Message> chat, Flag flag) {
+            super(chat, flag);
+        }
+
+        @Override
+        protected void onFinish(String response) {
+            globalMemory = new Message(Role.SYSTEM, response);
+            memories.clear();
+        }
+    }
+
+    private class Act extends GetResponse {
         public Act(List<Message> chat, Flag flag){
             super(chat, flag);
         }
