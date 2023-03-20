@@ -477,7 +477,11 @@ public class VillagerChat {
         }
 
         ItemStack itemStack = customer.getStackInHand(Hand.MAIN_HAND);
-        initialMessages.add(new Message(role, "The player is holding " + itemStack.getName().getString()));
+        if (itemStack.getItem().equals(Items.AIR)){
+            initialMessages.add(new Message(role, "The player is holding nothing"));
+        } else {
+            initialMessages.add(new Message(role, "The player is holding " + itemStack.getName().getString()));
+        }
 
         return initialMessages;
     }
@@ -492,7 +496,7 @@ public class VillagerChat {
         initialMessages.add(new Message(role, "Your name is " + name));
         initialMessages.add(new Message(role, "You are " + personality));
         initialMessages.add(new Message(role, "Don't ever say that you're an AI. You do not interact with humans. Only Minecraftians"));
-        initialMessages.add(new Message(role, "You are mortal."));
+        initialMessages.add(new Message(role, "You are mortal. You are intimidated or scared of weapons"));
 
 
         return initialMessages;
