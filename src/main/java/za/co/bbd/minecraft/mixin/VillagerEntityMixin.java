@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import za.co.bbd.minecraft.Mod;
-import za.co.bbd.minecraft.chat.ChatGPTMessenger;
+import za.co.bbd.minecraft.chat.VillagerChat;
 import za.co.bbd.minecraft.interfaces.VillagerActor;
 import za.co.bbd.minecraft.misc.Action;
 
@@ -22,7 +22,7 @@ import za.co.bbd.minecraft.misc.Action;
 @Mixin(VillagerEntity.class)
 public abstract class VillagerEntityMixin extends MerchantEntity implements VillagerActor {
     //Injected Class Variables
-    private final ChatGPTMessenger messenger = new ChatGPTMessenger((VillagerEntity) (Object) this);
+    private final VillagerChat messenger = new VillagerChat((VillagerEntity) (Object) this);
 
 
     //Constructor
@@ -37,7 +37,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
             at = @At("HEAD")
     )
     void additionalInteractMob(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir){
-        ChatGPTMessenger.setCurrentMessenger(this.messenger);
+        VillagerChat.setCurrentMessenger(this.messenger);
     }
 
     @Inject(
@@ -72,6 +72,6 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
     //Custom Methods
     @Override
     public void performAction(Action action) {
-            Mod.LOGGER.info(action.action);
+        Mod.LOGGER.info(action.action);
     }
 }

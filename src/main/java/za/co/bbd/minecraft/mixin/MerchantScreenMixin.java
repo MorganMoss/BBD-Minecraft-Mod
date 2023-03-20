@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import za.co.bbd.minecraft.chat.ChatGPTMessenger;
+import za.co.bbd.minecraft.chat.VillagerChat;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
 
@@ -35,7 +35,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     //These are constantly updated.
     private String playerResponse = "";
     private String villagerResponse = "";
-    private ChatGPTMessenger messenger;
+    private VillagerChat chat;
 
 
     // Source code injections and overrides
@@ -48,14 +48,14 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
             at = @At("HEAD")
     )
     void additionalInit(CallbackInfo ci) {
-        while (messenger == null) {
-            messenger = ChatGPTMessenger.getCurrentMessenger();
+        while (chat == null) {
+            chat = VillagerChat.getCurrentMessenger();
         }
-        if (this.messenger.isMemorizing()) {
+        if (this.chat.isMemorizing()) {
             this.client.player.closeHandledScreen();
             return;
         }
-        messenger.startChat();
+        chat.startChat();
         setupTextBox();
     }
 
@@ -78,12 +78,12 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ENTER){
-            if (!messenger.isReplying()){
-                messenger.respond(this.playerResponse);
+            if (!chat.isReplying()){
+                chat.respond(this.playerResponse);
                 this.nameField.setText("");
             }
         }
-        if (this.messenger.isReplying()) {
+        if (this.chat.isReplying()) {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -102,7 +102,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
         //TODO: This is very unoptimized... But... It runs fine?
         List<Message> villagerMessages = (
-                messenger.getChat()
+                chat.getChat()
                         .stream()
                         .filter(message -> message.role() == Role.ASSISTANT)
                         .collect(Collectors.toList())
@@ -110,7 +110,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
 
 
-        if (!messenger.isReplying() && villagerMessages.isEmpty()){
+        if (!chat.isReplying() && villagerMessages.isEmpty()){
             return;
         } else if (!villagerMessages.isEmpty()){
             villagerResponse = villagerMessages.get(villagerMessages.size() - 1).content();
@@ -149,7 +149,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     private void drawTextBox(MatrixStack matrices, int mouseX, int mouseY){
         this.nameField.setEditable(true);
-        if (messenger.isReplying()){
+        if (chat.isReplying()){
             this.nameField.setEditable(false);
         }
 

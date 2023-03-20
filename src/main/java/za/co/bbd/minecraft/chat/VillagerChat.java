@@ -22,10 +22,9 @@ import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public class ChatGPTMessenger {
+public class VillagerChat {
 
     //Constants
     private static final List<String> personalities = new ArrayList<>(Arrays.asList(
@@ -126,7 +125,7 @@ public class ChatGPTMessenger {
 
 
     //Active Chat
-    private static ChatGPTMessenger currentMessenger = null;
+    private static VillagerChat currentMessenger = null;
     private String customerName = "";
     private PlayerEntity customer = null;
 
@@ -168,7 +167,7 @@ public class ChatGPTMessenger {
 
 
     //Constructor
-    public ChatGPTMessenger(VillagerEntity villager){
+    public VillagerChat(VillagerEntity villager){
         this.villager = villager;
     }
 
@@ -180,14 +179,14 @@ public class ChatGPTMessenger {
      * @return the last interacted with villager's messenger
      */
     @Nullable
-    public static  ChatGPTMessenger getCurrentMessenger() {
-        ChatGPTMessenger messenger = currentMessenger;
+    public static VillagerChat getCurrentMessenger() {
+        VillagerChat messenger = currentMessenger;
         currentMessenger = null;
         return messenger;
     }
 
-    public static void setCurrentMessenger(@Nonnull ChatGPTMessenger currentMessenger) {
-        ChatGPTMessenger.currentMessenger = currentMessenger;
+    public static void setCurrentMessenger(@Nonnull VillagerChat currentMessenger) {
+        VillagerChat.currentMessenger = currentMessenger;
     }
 
 
@@ -203,25 +202,6 @@ public class ChatGPTMessenger {
         }
 
         return chats.getOrDefault(customerName, new ArrayList<>());
-    }
-
-    /**
-     * The player interacting with this messenger's villager says something to that villager.
-     * @param content the message from the player.
-     */
-    public void respond(@Nonnull String content){
-        List<Message> system_messages = getAllCommonLang();
-
-        List<Message> customer_messages = getChat();
-        customer_messages.add(new Message(Role.USER, content + " (In Minecraft; Keep your answer short)"));
-
-        List<Message> combined_messages = new ArrayList<>();
-        combined_messages.addAll(system_messages);
-        combined_messages.addAll(customer_messages);
-
-        Thread thread = new Chat(combined_messages, isReplying);
-        thread.start();
-        act();
     }
 
     public void startChat(){
@@ -276,8 +256,6 @@ public class ChatGPTMessenger {
         var c = chats.getOrDefault(customerName, new ArrayList<>());
         c.add(newMessage);
         chats.put(customerName, c);
-
-
     }
 
     /**
@@ -289,6 +267,30 @@ public class ChatGPTMessenger {
         chats.get(customerName).clear();
     }
 
+
+    //Chat Interactions
+    /**
+     * The player interacting with this messenger's villager says something to that villager.
+     * @param content the message from the player.
+     */
+    public void respond(@Nonnull String content){
+        List<Message> system_messages = getAllCommonLang();
+
+        List<Message> customer_messages = getChat();
+        customer_messages.add(new Message(Role.USER, content + " (In Minecraft; Keep your answer short)"));
+
+        List<Message> combined_messages = new ArrayList<>();
+        combined_messages.addAll(system_messages);
+        combined_messages.addAll(customer_messages);
+
+        Thread thread = new Chat(combined_messages, isReplying);
+        thread.start();
+        act();
+    }
+
+    /**
+     * Takes the last chat and previous memory of that and summarizes it into a new memory
+     */
     private void memorize(){
         List<Message> messages = new ArrayList<>();
 
@@ -301,6 +303,9 @@ public class ChatGPTMessenger {
         thread.start();
     }
 
+    /**
+     * Gives the villager the opportunity to do something during the conversation.
+     */
     private void act(){
         List<Message> messages = new ArrayList<>();
 
@@ -308,7 +313,7 @@ public class ChatGPTMessenger {
         messages.addAll(getMemoriesOfCustomerAsLang());
         messages.addAll(getCustomerInfoAsLang());
         messages.addAll(getChat());
-        messages.addAll(getActionPrompt());
+        messages.addAll(getActionPromptAsLang());
 
         Thread thread = new Act(messages, isActing);
         thread.start();
@@ -330,7 +335,7 @@ public class ChatGPTMessenger {
     }
 
     @Nonnull
-    private List<Message> getActionPrompt(){
+    private List<Message> getActionPromptAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
 
