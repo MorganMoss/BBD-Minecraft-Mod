@@ -29,7 +29,10 @@ public class ModItems {
             "redstone_transmitter_item",
             ItemGroups.REDSTONE, ModItemGroups.BBD
     );
+    
+    public static final BackPackItem b = registerBackPack();
 
+    
     //Initializer
     public static void registerModItems(){
         LOGGER.info("Registering Mod Items for " + MOD_ID);
@@ -47,6 +50,16 @@ public class ModItems {
         addToItemGroup(registeredItem, groups);
 
         return registeredItem;
+    }
+
+    private static BackPackItem registerBackPack() {
+        BackPackInfo binfo = new BackPackInfo("bag", 5, 5, false);
+        FabricItemSettings settings = new FabricItemSettings().maxCount(1);
+        BackPackItem item = new BackPackItem(binfo, settings);
+        BackPackItem reg = Registry.register(Registries.ITEM, new Identifier(MOD_ID, "backpack"), item);
+        addToItemGroup(reg, ModItemGroups.BBD);
+        return reg;
+
     }
 
 
