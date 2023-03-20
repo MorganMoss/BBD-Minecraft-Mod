@@ -73,6 +73,9 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     protected void handledScreenTick() {
         super.handledScreenTick();
         this.nameField.tick();
+        if (!this.chat.isChatting()) {
+            this.client.player.closeHandledScreen();
+        }
     }
 
     @Override
@@ -107,8 +110,6 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
                         .filter(message -> message.role() == Role.ASSISTANT)
                         .collect(Collectors.toList())
         );
-
-
 
         if (!chat.isReplying() && villagerMessages.isEmpty()){
             return;
@@ -187,6 +188,5 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         this.setInitialFocus(this.nameField);
         this.nameField.setEditable(true);
     }
-
 
 }
