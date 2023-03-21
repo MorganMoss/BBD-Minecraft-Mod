@@ -9,7 +9,9 @@ import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import za.co.bbd.minecraft.blockEntities.RedstoneTransmitterEntity;
 import za.co.bbd.minecraft.blocks.RedstoneReceiverBlock;
+import za.co.bbd.minecraft.blocks.RedstoneTransmitterBlock;
 
 public class RedstoneLinkerItem extends Item {
 
@@ -26,14 +28,25 @@ public class RedstoneLinkerItem extends Item {
     World world = context.getWorld();
     PlayerEntity playerEntity = context.getPlayer();
 
-    if (world.isClient) {
-      if (world.getBlockState(blockPos).getBlock() instanceof RedstoneReceiverBlock) {
-        world.playSound(playerEntity, blockPos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 1.0f,
-            1.0f);
-        playerEntity.sendMessage(Text.literal("Position " + blockPos.toShortString() + " stored!"));
-        this.storedPosition = blockPos;
-      } else {
-        playerEntity.sendMessage(Text.literal("Saved position: " + storedPosition.toShortString()));
+    if (world.getBlockState(blockPos).getBlock() instanceof RedstoneReceiverBlock) {
+      world.playSound(playerEntity, blockPos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 1.0f,
+          1.0f);
+      if (world.isClient) {
+        playerEntity.sendMessage(Text.literal("Receiver Location " + blockPos.toShortString() + " copied!"));
+      }
+      this.storedPosition = blockPos;
+    } else if (world.getBlockState(blockPos).getBlock() instanceof RedstoneTransmitterBlock) {
+      world.playSound(playerEntity, blockPos, SoundEvents.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, SoundCategory.BLOCKS, 1.0f,
+          1.0f);
+      if (world.isClient) {
+        playerEntity
+            .sendMessage(
+                Text.literal("Receiver Location " + storedPosition.toShortString() + " loaded into Transmitter!"));
+      }
+      ((RedstoneTransmitterEntity) world.getBlockEntity(blockPos)).setTarget(storedPosition);
+    } else {
+      if (world.isClient) {
+        playerEntity.sendMessage(Text.literal("Current Copied Location: " + storedPosition.toShortString()));
       }
     }
 

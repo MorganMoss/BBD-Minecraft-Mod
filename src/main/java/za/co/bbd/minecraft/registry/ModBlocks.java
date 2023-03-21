@@ -13,9 +13,9 @@ import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import za.co.bbd.minecraft.blockEntities.RedstoneTransmitterEntity;
 import za.co.bbd.minecraft.blocks.RedstoneReceiverBlock;
 import za.co.bbd.minecraft.blocks.RedstoneTransmitterBlock;
-import za.co.bbd.minecraft.tileEntities.RedstoneTransmitterEntity;
 
 import static za.co.bbd.minecraft.Mod.LOGGER;
 import static za.co.bbd.minecraft.Mod.MOD_ID;
@@ -47,11 +47,11 @@ public class ModBlocks {
                         ItemGroups.REDSTONE, ModItemGroups.BBD);
 
         public static final BlockEntityType<RedstoneTransmitterEntity> REDSTONE_TRANSMITTER_BLOCK_ENTITY = Registry
-                        .register(
-                                        Registries.BLOCK_ENTITY_TYPE,
-                                        new Identifier(MOD_ID, "redstone_receiver_entity"),
+                        .register(Registries.BLOCK_ENTITY_TYPE,
+                                        new Identifier(MOD_ID, "redstone_transmitter_entity"),
                                         FabricBlockEntityTypeBuilder
-                                                        .create(RedstoneTransmitterEntity::new, REDSTONE_RECEIVER_BLOCK)
+                                                        .create(RedstoneTransmitterEntity::new,
+                                                                        REDSTONE_TRANSMITTER_BLOCK)
                                                         .build());
 
         // Initializer

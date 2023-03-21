@@ -5,12 +5,17 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockEntityProvider;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import za.co.bbd.minecraft.tileEntities.RedstoneTransmitterEntity;
+import za.co.bbd.minecraft.blockEntities.RedstoneTransmitterEntity;
 
 import static za.co.bbd.minecraft.registry.ModBlocks.REDSTONE_RECEIVER_BLOCK;
 
@@ -35,15 +40,13 @@ public class RedstoneTransmitterBlock extends Block implements BlockEntityProvid
     @Override
     public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
             boolean notify) {
-        if (world.getBlockState(new BlockPos(-1632, 69, 921)).getBlock() instanceof RedstoneReceiverBlock) {
+        BlockPos target = ((RedstoneTransmitterEntity) world.getBlockEntity(pos)).getTarget();
+        if (world.getBlockState(target).getBlock() instanceof RedstoneReceiverBlock) {
             if (world.isReceivingRedstonePower(pos)) {
-                world.setBlockState(new BlockPos(-1632, 69, 921),
-                        REDSTONE_RECEIVER_BLOCK.getDefaultState().with(ACTIVE, true));
+                world.setBlockState(target, REDSTONE_RECEIVER_BLOCK.getDefaultState().with(ACTIVE, true));
                 world.setBlockState(pos, (BlockState) state.with(ACTIVE, true));
-
             } else {
-                world.setBlockState(new BlockPos(-1632, 69, 921),
-                        REDSTONE_RECEIVER_BLOCK.getDefaultState().with(ACTIVE, false));
+                world.setBlockState(target, REDSTONE_RECEIVER_BLOCK.getDefaultState().with(ACTIVE, false));
                 world.setBlockState(pos, (BlockState) state.with(ACTIVE, false));
             }
         }
