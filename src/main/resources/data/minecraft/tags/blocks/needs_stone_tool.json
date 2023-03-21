@@ -1,6 +1,4 @@
 {
   "replace": false,
-  "values": [
-    "bbd:redstone_receiver_block"
-  ]
+  "values": ["bbd:redstone_receiver_block", "bbd:redstone_transmitter_block"]
 }

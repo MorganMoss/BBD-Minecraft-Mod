@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "active=false": { "model": "bbd:block/redstone_transmitter_block" },
+    "active=true": { "model": "bbd:block/active_redstone_transmitter_block" }
+  }
+}
