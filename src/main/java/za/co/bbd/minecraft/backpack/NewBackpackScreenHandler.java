@@ -16,7 +16,6 @@ import net.minecraft.screen.slot.SlotActionType;
 import java.util.Set;
 
 public class NewBackpackScreenHandler extends ScreenHandler{
-    private static final int field_30780 = 9;
     private final Inventory inventory;
     private final int rows;
     public static final Set<Item> SHULKER_BOXES = Sets.newHashSet(Items.SHULKER_BOX, Items.BLACK_SHULKER_BOX, Items.BLUE_SHULKER_BOX,

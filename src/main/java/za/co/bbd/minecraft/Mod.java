@@ -1,7 +1,6 @@
 package za.co.bbd.minecraft;
 
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.datagen.v1.provider.FabricDynamicRegistryProvider.Entries;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
@@ -10,10 +9,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.util.Identifier;
 
-import org.apache.commons.lang3.RegExUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
