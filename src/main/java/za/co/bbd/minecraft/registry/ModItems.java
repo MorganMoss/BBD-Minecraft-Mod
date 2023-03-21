@@ -7,6 +7,7 @@ import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import za.co.bbd.minecraft.items.RedstoneLinkerItem;
 
 import static za.co.bbd.minecraft.Mod.LOGGER;
 import static za.co.bbd.minecraft.Mod.MOD_ID;
@@ -28,6 +29,7 @@ public class ModItems {
     // https://fabricmc.net/wiki/tutorial:tooltip
     public static final Item REDSTONE_LINKER_ITEM = registerItem(
             "redstone_linker_item",
+            new RedstoneLinkerItem(new FabricItemSettings()),
             ItemGroups.REDSTONE, ModItemGroups.BBD);
 
     // Initializer
@@ -38,11 +40,11 @@ public class ModItems {
     // Helper Methods
     // Todo, replace 'new Item(new FabricItemSettings())' with an item param, so
     // that you can have custom item classes
-    private static Item registerItem(String name, ItemGroup... groups) {
+    private static Item registerItem(String name, Item item, ItemGroup... groups) {
         final Item registeredItem = Registry.register(
                 Registries.ITEM,
                 new Identifier(MOD_ID, name),
-                new Item(new FabricItemSettings()));
+                item);
 
         addToItemGroup(registeredItem, groups);
 

@@ -3,6 +3,7 @@ package za.co.bbd.minecraft.registry;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.FabricBlockSettings;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.minecraft.block.Block;
 import net.minecraft.block.Material;
 import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.item.BlockItem;
@@ -34,12 +35,12 @@ public class ModBlocks {
         // TODO: (Optional) See if theres a better way to setup tool requirements than a
         // config file.
 
-        public static final RedstoneReceiverBlock REDSTONE_RECEIVER_BLOCK = registerRedstoneReceiverBlock(
+        public static final Block REDSTONE_RECEIVER_BLOCK = registerBlock(
                         "redstone_receiver_block",
                         new RedstoneReceiverBlock(FabricBlockSettings.of(Material.METAL).requiresTool().strength(4.0f)),
                         ItemGroups.REDSTONE, ModItemGroups.BBD);
 
-        public static final RedstoneTransmitterBlock REDSTONE_TRANSMITTER_BLOCK = registerRedstoneTransmitterBlock(
+        public static final Block REDSTONE_TRANSMITTER_BLOCK = registerBlock(
                         "redstone_transmitter_block",
                         new RedstoneTransmitterBlock(
                                         FabricBlockSettings.of(Material.METAL).requiresTool().strength(4.0f)),
@@ -59,7 +60,16 @@ public class ModBlocks {
         }
 
         // Helper Methods
-        private static Item registerRedstoneReceiverBlockItem(String name, RedstoneReceiverBlock block,
+        private static Block registerBlock(String name, Block block,
+                        ItemGroup... groups) {
+                registerBlockItem(name, block, groups);
+                return Registry.register(
+                                Registries.BLOCK,
+                                new Identifier(MOD_ID, name),
+                                block);
+        }
+
+        private static Item registerBlockItem(String name, Block block,
                         ItemGroup... groups) {
                 final Item registeredBlockItem = Registry.register(
                                 Registries.ITEM,
@@ -67,34 +77,5 @@ public class ModBlocks {
                                 new BlockItem(block, new FabricItemSettings()));
                 addToItemGroup(registeredBlockItem, groups);
                 return registeredBlockItem;
-        }
-
-        private static RedstoneReceiverBlock registerRedstoneReceiverBlock(String name, RedstoneReceiverBlock block,
-                        ItemGroup... groups) {
-                registerRedstoneReceiverBlockItem(name, block, groups);
-                return Registry.register(
-                                Registries.BLOCK,
-                                new Identifier(MOD_ID, name),
-                                block);
-        }
-
-        private static Item registerRedstoneTransmitterBlockItem(String name, RedstoneTransmitterBlock block,
-                        ItemGroup... groups) {
-                final Item registeredBlockItem = Registry.register(
-                                Registries.ITEM,
-                                new Identifier(MOD_ID, name),
-                                new BlockItem(block, new FabricItemSettings()));
-                addToItemGroup(registeredBlockItem, groups);
-                return registeredBlockItem;
-        }
-
-        private static RedstoneTransmitterBlock registerRedstoneTransmitterBlock(String name,
-                        RedstoneTransmitterBlock block,
-                        ItemGroup... groups) {
-                registerRedstoneTransmitterBlockItem(name, block, groups);
-                return Registry.register(
-                                Registries.BLOCK,
-                                new Identifier(MOD_ID, name),
-                                block);
         }
 }
