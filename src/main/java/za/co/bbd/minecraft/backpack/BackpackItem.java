@@ -9,10 +9,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
+import za.co.bbd.minecraft.database.Database;
 
 public class BackpackItem extends Item{
+    Database db = new Database();
     public BackpackItem(Settings settings) {
         super(settings);
+        db.setupConnection();
     }
 
     @Override
@@ -35,6 +38,6 @@ public class BackpackItem extends Item{
     private NamedScreenHandlerFactory createScreenHandlerFactory(ItemStack stack)
     {
         return new SimpleNamedScreenHandlerFactory((i, playerInventory, playerEntity) ->
-                NewBackpackScreenHandler.createGeneric9x6(i, playerInventory, new BackpackInventory(stack)), stack.getName());
+                NewBackpackScreenHandler.createGeneric9x6(i, playerInventory, new BackpackInventory(stack, db)), stack.getName());
     }
 }

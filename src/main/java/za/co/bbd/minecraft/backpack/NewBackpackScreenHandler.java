@@ -13,6 +13,8 @@ import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
+import net.minecraft.util.Hand;
+import za.co.bbd.minecraft.database.Database;
 
 import java.util.Set;
 
@@ -24,6 +26,8 @@ public class NewBackpackScreenHandler extends ScreenHandler{
                                                     Items.LIGHT_BLUE_SHULKER_BOX, Items.LIGHT_GRAY_SHULKER_BOX, Items.LIME_SHULKER_BOX,
                                                     Items.MAGENTA_SHULKER_BOX, Items.ORANGE_SHULKER_BOX, Items.PINK_SHULKER_BOX, Items.RED_SHULKER_BOX,
                                                     Items.WHITE_SHULKER_BOX, Items.YELLOW_SHULKER_BOX, Items.PURPLE_SHULKER_BOX);
+
+    Database db = new Database();
 
     private NewBackpackScreenHandler(ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory, int rows) {
         this(type, syncId, playerInventory, new SimpleInventory(9 * rows), rows);
@@ -63,6 +67,8 @@ public class NewBackpackScreenHandler extends ScreenHandler{
         for(j = 0; j < 9; ++j) {
             this.addSlot(new BackpackSlot(playerInventory, j, 8 + j * 18, 161 + i));
         }
+
+        db.setupConnection();
 
     }
 
@@ -111,6 +117,7 @@ public class NewBackpackScreenHandler extends ScreenHandler{
         // Passed click tests
         // Prob want to use backpack name
         super.onSlotClick(slotId, clickData, actionType, playerEntity);
+
     }
     public boolean canUse(PlayerEntity player) {
         return this.inventory.canPlayerUse(player);
@@ -151,6 +158,11 @@ public class NewBackpackScreenHandler extends ScreenHandler{
     }
 
     public void close(PlayerEntity player) {
+        ItemStack stack = player.getStackInHand(Hand.MAIN_HAND);
+        String name = stack.getName().getString();
+        String nbt = stack.getSubNbt("backpack").asString();
+
+        db.setNbt(name, nbt);
         super.close(player);
         this.inventory.onClose(player);
     }

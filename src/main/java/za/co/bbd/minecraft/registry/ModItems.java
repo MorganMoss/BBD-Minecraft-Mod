@@ -31,11 +31,6 @@ public class ModItems {
 
     // TODO: Needs a tooltip (could do the same for the receiver block)
     // https://fabricmc.net/wiki/tutorial:tooltip
-
-    public static final Item REDSTONE_TRANSMITTER_ITEM = registerItem(
-            "redstone_transmitter_item",
-            ItemGroups.REDSTONE, ModItemGroups.BBD
-    );
     
     public static final Item BACKPACK = new BackpackItem(new Item.Settings().maxCount(1));
 

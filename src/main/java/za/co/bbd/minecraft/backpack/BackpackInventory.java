@@ -1,20 +1,31 @@
 package za.co.bbd.minecraft.backpack;
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+
 import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.StringNbtReader;
+import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
+import za.co.bbd.minecraft.database.Database;
 
 public class BackpackInventory implements ImplementedInventory{
     private final ItemStack stack;
     private final DefaultedList<ItemStack> items = DefaultedList.ofSize(54, ItemStack.EMPTY);
 
-    public BackpackInventory(ItemStack stack) {
+    public BackpackInventory(ItemStack stack, Database db) {
         this.stack = stack;
         NbtCompound tag = stack.getSubNbt("backpack");
-
         if (tag != null) {
-            Inventories.readNbt(tag, items);
+            //Need to fetch from DB
+            NbtCompound s = new NbtCompound();
+            try {
+                s.copyFrom(StringNbtReader.parse(db.getNbt(stack.getName().getString())));
+            } catch (CommandSyntaxException e) {
+                e.printStackTrace();
+            }
+            Inventories.readNbt(s, items);
         }
     }
 

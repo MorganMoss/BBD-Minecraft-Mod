@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import za.co.bbd.minecraft.backpack.BackpackItem;
 import za.co.bbd.minecraft.chat.ChatGPTEndpoint;
+import za.co.bbd.minecraft.database.Database;
 import za.co.bbd.minecraft.registry.ModBlocks;
 import za.co.bbd.minecraft.registry.ModItemGroups;
 import za.co.bbd.minecraft.registry.ModItems;
@@ -28,7 +29,7 @@ import za.co.bbd.minecraft.registry.ModItems;
 public class Mod implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger(Mod.class.getName());
     public static final String MOD_ID = "bbd";
-
+    Database db = new Database();
 
     //This should move but lets see how it goes
     
@@ -41,10 +42,5 @@ public class Mod implements ModInitializer {
         ModItems.registerBackpackItem();
         ModBlocks.registerModBlocks();
         ChatGPTEndpoint.initialize();
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://172.23.122.70:5433/postgres", "postgres", "postgres")) {}
-        catch (SQLException e) {
-            System.out.println("Connection failure.");
-            e.printStackTrace();
-        }
     }
 }
