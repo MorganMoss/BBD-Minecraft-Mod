@@ -12,6 +12,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.text.Text;
 
 import java.util.Set;
 
@@ -94,6 +95,7 @@ public class NewBackpackScreenHandler extends ScreenHandler{
     @Override
     public void onSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity)
     {
+
         // Prevents single or shift-click while pack is open
         if (slotId >= 0)  // slotId < 0 are used for networking internals
         {
@@ -105,7 +107,9 @@ public class NewBackpackScreenHandler extends ScreenHandler{
             }
 
         }
-
+        // Need to do BD call here
+        // Passed click tests
+        // Prob want to use backpack name
         super.onSlotClick(slotId, clickData, actionType, playerEntity);
     }
     public boolean canUse(PlayerEntity player) {

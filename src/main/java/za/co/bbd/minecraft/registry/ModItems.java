@@ -1,13 +1,17 @@
 package za.co.bbd.minecraft.registry;
 
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-
+import za.co.bbd.minecraft.backpack.BackpackItem;
 
 import static za.co.bbd.minecraft.Mod.LOGGER;
 import static za.co.bbd.minecraft.Mod.MOD_ID;
@@ -29,6 +33,8 @@ public class ModItems {
             "redstone_transmitter_item",
             ItemGroups.REDSTONE, ModItemGroups.BBD
     );
+    
+    public static final Item BACKPACK = new BackpackItem(new Item.Settings().maxCount(1));
 
     //Initializer
     public static void registerModItems(){
@@ -47,6 +53,14 @@ public class ModItems {
         addToItemGroup(registeredItem, groups);
 
         return registeredItem;
+    }
+
+    public static void registerBackpackItem(){
+        ItemGroupEvents.modifyEntriesEvent(ModItemGroups.BBD).register(content -> {
+            content.add(BACKPACK);
+        });
+
+        Registry.register(Registries.ITEM, new Identifier(MOD_ID, "backpack"), BACKPACK);
     }
 
 

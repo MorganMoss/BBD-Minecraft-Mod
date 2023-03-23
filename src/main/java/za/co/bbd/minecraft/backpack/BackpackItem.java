@@ -5,6 +5,7 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.text.Text;
 import net.minecraft.util.Hand;
 import net.minecraft.util.TypedActionResult;
 import net.minecraft.world.World;
@@ -22,6 +23,7 @@ public class BackpackItem extends Item{
     @Override
     public TypedActionResult<ItemStack> use(World world, PlayerEntity player, Hand hand) {
         if(player.world.isClient) return TypedActionResult.pass(player.getStackInHand(hand));
+        // This is called when backpack opens, so need to get contents
 
         player.setCurrentHand(hand);
         ItemStack stack = player.getStackInHand(hand);
