@@ -1,6 +1,5 @@
 package za.co.bbd.minecraft.mixin;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
@@ -10,6 +9,7 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
@@ -17,10 +17,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
-import org.jetbrains.annotations.Nullable;
-
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -31,14 +28,12 @@ import za.co.bbd.minecraft.interfaces.VillagerActor;
 import za.co.bbd.minecraft.interfaces.VillagerChatHolder;
 import za.co.bbd.minecraft.misc.Action;
 
-import javax.swing.*;
+import java.util.Collections;
 import java.util.List;
 
 
 @Mixin(VillagerEntity.class)
 public abstract class VillagerEntityMixin extends MerchantEntity implements VillagerActor, VillagerChatHolder {
-    @Shadow private @Nullable PlayerEntity lastCustomer;
-    @Shadow private long lastGossipDecayTime;
     private static final double VISION_RADIUS = 100;
 
     //Injected Class Variables
@@ -103,20 +98,11 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
             case RUN_AWAY -> flee();
             case CALL_IRON_GOLEM -> callGolem();
             case WAIT_REPLY, LISTEN, WAIT, DO_NOTHING -> {}
-            case STEAL -> {
-            }
-            case GIFT -> {
-            }
-            case TRADE -> {
-            }
-            case REWARD -> {
-            }
-            case GIVE -> {
-            }
-            case DISCOUNT -> {
-            }
-            case RAISE_PRICE -> {
-            }
+            case STEAL -> {}
+            case GIFT, GIVE, REWARD -> gift();
+            case TRADE -> {}
+            case DISCOUNT -> {}
+            case RAISE_PRICE -> {}
             case QUEST -> {
             }
         }
@@ -129,7 +115,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
 
     private void endChat(){
         Mod.LOGGER.info("Ending Chat");
-        wait(10);
+        wait(2);
         chat.endChat();
         Mod.LOGGER.info("Chat Ended");
     }
@@ -138,13 +124,14 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
         endChat();
         Mod.LOGGER.info("Fleeing Player");
         new Thread(() -> {
-            Goal goal = new FleeEntityGoal<>(this, PlayerEntity.class, 20, 1.0, 1.5);
-            goalSelector.add(4, goal);
+            Goal goal = new FleeEntityGoal<>(this, PlayerEntity.class, 20, 1.0, 1.2);
+            goalSelector.add(1, goal);
             wait(60);
             goalSelector.remove(goal);
         }).start();
 
     }
+
     private void callGolem(){
         flee();
         Mod.LOGGER.info("Calling Iron Golem on " + chat.customer.getEntityName());
@@ -164,11 +151,18 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
         Mod.LOGGER.info("Following Player");
         //                new FollowCustomerTask(1.8f).tryStarting(this.getServer().getWorld(), this, 30000);
         new Thread(() -> {
-            Goal goal = new TemptGoal(this, 1.5, Ingredient.ofItems(Items.EMERALD), false);
-            goalSelector.add(4, goal);
+            Goal goal = new TemptGoal(this, 1.2, Ingredient.ofItems(Items.EMERALD), false);
+            goalSelector.add(1, goal);
             wait(60);
             goalSelector.remove(goal);
         }).start();
 
+    }
+
+    private void gift(){
+        List<Item> gifts = List.of(Items.EMERALD, Items.COOKIE);
+        Collections.shuffle(gifts);
+
+        dropItem(gifts.get(0));
     }
 }

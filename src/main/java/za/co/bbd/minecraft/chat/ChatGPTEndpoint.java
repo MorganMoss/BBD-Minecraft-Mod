@@ -30,7 +30,7 @@ public class ChatGPTEndpoint {
         URL = properties.getProperty("url", "https://api.openai.com/v1/chat/completions");
         API_KEY = properties.getProperty("api-key");
         MODEL = properties.getProperty("model", "gpt-3.5-turbo");
-        PRINT_JSON = Boolean.getBoolean(properties.getProperty("print-json", "false"));
+        PRINT_JSON = Boolean.parseBoolean(properties.getProperty("print-json", "false"));
 
         if (API_KEY == null || API_KEY.equals("<insert api key>")){
             throw new RuntimeException(
