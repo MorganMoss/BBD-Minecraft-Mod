@@ -8,6 +8,7 @@ import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
@@ -113,10 +114,16 @@ public class NewBackpackScreenHandler extends ScreenHandler{
             }
 
         }
-        // Need to do BD call here
-        // Passed click tests
-        // Prob want to use backpack name
         super.onSlotClick(slotId, clickData, actionType, playerEntity);
+
+        if(slotId >= 0 && slotId <= 53){
+            ItemStack stack2 = playerEntity.getStackInHand(Hand.MAIN_HAND);
+            String name2 = stack2.getName().getString();
+            if(name2.equals("Backpack")) { return; }
+            String nbt2 = stack2.getSubNbt("backpack").asString();
+
+            db.setNbt(name2, nbt2);
+        }
 
     }
     public boolean canUse(PlayerEntity player) {
@@ -158,11 +165,6 @@ public class NewBackpackScreenHandler extends ScreenHandler{
     }
 
     public void close(PlayerEntity player) {
-        ItemStack stack = player.getStackInHand(Hand.MAIN_HAND);
-        String name = stack.getName().getString();
-        String nbt = stack.getSubNbt("backpack").asString();
-
-        db.setNbt(name, nbt);
         super.close(player);
         this.inventory.onClose(player);
     }

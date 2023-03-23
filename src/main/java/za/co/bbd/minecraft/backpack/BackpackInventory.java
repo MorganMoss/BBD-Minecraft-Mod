@@ -19,13 +19,14 @@ public class BackpackInventory implements ImplementedInventory{
         NbtCompound tag = stack.getSubNbt("backpack");
         if (tag != null) {
             //Need to fetch from DB
-            NbtCompound s = new NbtCompound();
             try {
-                s.copyFrom(StringNbtReader.parse(db.getNbt(stack.getName().getString())));
+                String name = stack.getName().getString();
+                if (!name.equals("Backpack"))
+                    tag.copyFrom(StringNbtReader.parse(db.getNbt(name)));
             } catch (CommandSyntaxException e) {
                 e.printStackTrace();
             }
-            Inventories.readNbt(s, items);
+            Inventories.readNbt(tag, items);
         }
     }
 

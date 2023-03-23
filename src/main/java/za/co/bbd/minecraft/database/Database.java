@@ -22,19 +22,19 @@ public class Database {
     public String getNbt(String name) {
         try {
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM public.backs WHERE name = '" + name + "';");
+            ResultSet rs = stmt.executeQuery("SELECT * FROM public.backs WHERE name = '" + name.replace("'", "\\'") + "';");
             rs.next();
             String s = rs.getString("nbt");
             return s;
         } catch (Exception e) {
             System.out.println(e);
-            return "{Items:[{Count:32b,Slot:0b,id:\"minecraft:birch_planks\"},{Count:32b,Slot:1b,id:\"minecraft:oak_wood\"}]}";
+            return "{Items:[]}";
         }
     }
     public void setNbt(String name, String nbt) {
         try {
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("UPDATE public.backs SET nbt='" + nbt + "' WHERE name='" + name + "';");
+            ResultSet rs = stmt.executeQuery("INSERT INTO public.backs (name, nbt) VALUES ('" + name.replace("'", "\\'") + "', '" + nbt.replace("'", "\\'") + "') ON CONFLICT (name) DO UPDATE SET nbt='" + nbt.replace("'", "\\'") + "';");
         } catch (Exception e) {
             System.out.println(e);
         }
