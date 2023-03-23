@@ -3,6 +3,8 @@ package za.co.bbd.minecraft.chat;
 import com.google.common.collect.ImmutableSet;
 import kong.unirest.json.JSONException;
 import kong.unirest.json.JSONObject;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
@@ -15,12 +17,16 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.VillagerProfession;
 import org.jetbrains.annotations.Nullable;
+import za.co.bbd.minecraft.Identifiers.ModIdentifiers;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.interfaces.VillagerActor;
 import za.co.bbd.minecraft.interfaces.VillagerChatHolder;
@@ -28,7 +34,6 @@ import za.co.bbd.minecraft.misc.Action;
 import za.co.bbd.minecraft.misc.Flag;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
-import za.co.bbd.minecraft.mixin.VillagerEntityMixin;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -184,24 +189,6 @@ public class VillagerChat {
     }
 
 
-    //Changing Active Villager Chat
-    /**
-     * When this is called, the messenger that set as current (when a villager is interacted with)
-     * will be returned, and follow-up calls to this before another villager is interacted with will be null
-     * @return the last interacted with villager's messenger
-     */
-    @Nullable
-    public static VillagerChat getCurrentMessenger() {
-        VillagerChat messenger = currentMessenger;
-        currentMessenger = null;
-        return messenger;
-    }
-
-    public static void setCurrentMessenger(VillagerChat currentMessenger) {
-        VillagerChat.currentMessenger = currentMessenger;
-    }
-
-
     //Chat Handling
     /**
      * Gets the history of the player currently interacting with this messengers' villager.
@@ -239,6 +226,12 @@ public class VillagerChat {
             return;
         }
         isChatting.setFlag(false);
+        ServerPlayNetworking.unregisterGlobalReceiver(
+                new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + customer.getUuidAsString())
+        );
+
+        Mod.LOGGER.info("Stopped Listening on " + ModIdentifiers.CHAT_PLAYER_IDENTIFIER + customer.getUuidAsString());
+
         memorize();
     }
 
@@ -267,6 +260,17 @@ public class VillagerChat {
         var chat = chats.getOrDefault(customerName, new ArrayList<>());
         chat.add(newMessage);
         chats.put(customerName, chat);
+
+        if (newMessage.role().equals(Role.ASSISTANT)){
+            PacketByteBuf packet = PacketByteBufs.create();
+
+            packet.writeString(newMessage.content());
+            ServerPlayNetworking.send(
+                    (ServerPlayerEntity) customer,
+                    new Identifier(ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + customer.getUuidAsString()),
+                    packet
+            );
+        }
     }
 
     /**
@@ -282,6 +286,7 @@ public class VillagerChat {
     //Chat Interactions
     /**
      * The player interacting with this messenger's villager says something to that villager.
+     *
      * @param content the message from the player.
      */
     public void respond(String content){
@@ -477,6 +482,7 @@ public class VillagerChat {
             initialMessages.addAll(
                     entities
                             .stream()
+                            .filter(villagerEntity -> ((VillagerChatHolder) villagerEntity).getChat() != null)
                             .map(villagerEntity -> ((VillagerChatHolder) villagerEntity).getChat().name + " has the following trades: " + tradeOffersToString(villagerEntity.getOffers()) + ". They are " + villagerEntity.getPos().distanceTo(pos))
                             .map(content -> new Message(Role.SYSTEM, content))
                             .collect(Collectors.toList())

@@ -1,5 +1,6 @@
 package za.co.bbd.minecraft.mixin;
 
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.ai.goal.FleeEntityGoal;
@@ -13,15 +14,14 @@ import net.minecraft.item.Item;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.Ingredient;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import za.co.bbd.minecraft.Identifiers.ModIdentifiers;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.chat.VillagerChat;
 import za.co.bbd.minecraft.interfaces.VillagerActor;
@@ -37,7 +37,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
     private static final double VISION_RADIUS = 100;
 
     //Injected Class Variables
-    private final VillagerChat chat = new VillagerChat((VillagerEntity) (Object) this);
+    private final VillagerChat chat = world.isClient ? null : new VillagerChat((VillagerEntity) (Object) this);
 
 
     //Constructor
@@ -48,11 +48,23 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
 
     //Injections
     @Inject(
-            method = "interactMob",
-            at = @At("HEAD")
+            method = "beginTradeWith",
+            at = @At("TAIL")
     )
-    void additionalInteractMob(PlayerEntity player, Hand hand, CallbackInfoReturnable<ActionResult> cir){
-        VillagerChat.setCurrentMessenger(this.chat);
+    void additionalBeginTradeWith(PlayerEntity customer, CallbackInfo ci){
+        if (!world.isClient) {
+            if (!chat.isMemorizing()) {
+                //Start chat when the client is able to receive
+                chat.startChat();
+
+                ServerPlayNetworking.registerGlobalReceiver(
+                        new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + getCustomer().getUuidAsString()),
+                        (server, player2, handler, buf, responseSender) -> chat.respond(buf.readString())
+                );
+
+                Mod.LOGGER.info("Started Listening on " + ModIdentifiers.CHAT_PLAYER_IDENTIFIER + getCustomer().getUuidAsString());
+            }
+        }
     }
 
     @Inject(
@@ -60,8 +72,13 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
             at = @At("TAIL")
     )
     void additionalTick(CallbackInfo ci){
-        if (!this.hasCustomer() && chat.isChatting()){
-            chat.endChat();
+        if (chat == null){
+            return;
+        }
+        if (chat.isChatting()){
+            if (!this.hasCustomer()) {
+                chat.endChat();
+            }
         }
     }
 
@@ -83,6 +100,7 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
             chat.parsePersistentChatGPTData(chatData);
         }
     }
+
 
     //Custom Methods
     @Override

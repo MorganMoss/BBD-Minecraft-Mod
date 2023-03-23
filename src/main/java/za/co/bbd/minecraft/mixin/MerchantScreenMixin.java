@@ -1,12 +1,15 @@
 package za.co.bbd.minecraft.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.MerchantScreenHandler;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -16,12 +19,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import za.co.bbd.minecraft.chat.VillagerChat;
-import za.co.bbd.minecraft.misc.Message;
-import za.co.bbd.minecraft.misc.Role;
+import za.co.bbd.minecraft.Identifiers.ModIdentifiers;
+import za.co.bbd.minecraft.Mod;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Mixin(MerchantScreen.class)
 public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHandler> {
@@ -33,14 +34,15 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     private TextFieldWidget nameField;
 
     //These are constantly updated.
+    private String villagerResponse = "I is thinking ... owo";
     private String playerResponse = "";
-    private String villagerResponse = "";
-    private VillagerChat chat;
 
+    private boolean isReplying = true;
 
     // Source code injections and overrides
     public MerchantScreenMixin(MerchantScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
+
     }
 
     @Inject(
@@ -48,14 +50,38 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
             at = @At("HEAD")
     )
     void additionalInit(CallbackInfo ci) {
-        while (chat == null) {
-            chat = VillagerChat.getCurrentMessenger();
-        }
-        if (this.chat.isMemorizing()) {
-            this.client.player.closeHandledScreen();
-            return;
-        }
-        chat.startChat();
+        isReplying = true;
+        new Thread(() -> {
+            for (int i = 0; i < 100; i++) {
+                if (!ClientPlayNetworking.canSend(
+                        new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + this.client.player.getUuidAsString()))
+                ) {
+                    if (i == 99){
+                        client.execute(this.client.player::closeHandledScreen);
+                        Mod.LOGGER.info(List.of(ClientPlayNetworking.getSendable()).toString());
+                        return;
+                    }
+
+                } else {
+                    break;
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).start();
+
+        ClientPlayNetworking.registerGlobalReceiver(
+                new Identifier(ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + this.client.player.getUuidAsString()),
+                (client1, handler1, buf, responseSender) -> {
+                    villagerResponse = buf.readString();
+                    isReplying = false;
+                }
+        );
+        Mod.LOGGER.info("Started Listening on " + ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + this.client.player.getUuidAsString());
+
         setupTextBox();
     }
 
@@ -73,20 +99,27 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     protected void handledScreenTick() {
         super.handledScreenTick();
         this.nameField.tick();
-        if (!this.chat.isChatting()) {
-            this.client.player.closeHandledScreen();
+
+        if (!isReplying && !ClientPlayNetworking.canSend(new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + this.client.player.getUuidAsString()))) {
+            client.execute(this.client.player::closeHandledScreen);
+
         }
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (keyCode == GLFW.GLFW_KEY_ENTER){
-            if (!chat.isReplying()){
-                chat.respond(this.playerResponse);
+            if (!isReplying){
+                isReplying = true;
+                PacketByteBuf packet = PacketByteBufs.create();
+                packet.writeString(playerResponse);
+                ClientPlayNetworking.send(
+                        new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + this.client.player.getUuidAsString()),
+                        packet);
                 this.nameField.setText("");
             }
         }
-        if (this.chat.isReplying()) {
+        if (isReplying) {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
@@ -99,24 +132,17 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
     }
 
 
+    @Override
+    public void close() {
+        super.close();
+        ClientPlayNetworking.unregisterGlobalReceiver(
+                new Identifier(ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + this.client.player.getUuidAsString())
+        );
+        isReplying = true;
+    }
+
     //Draw Helper Methods
     private void drawChatGPT(MatrixStack matrices){
-        villagerResponse = "I'm thinking...";
-
-        //TODO: This is very unoptimized... But... It runs fine?
-        List<Message> villagerMessages = (
-                chat.getChat()
-                        .stream()
-                        .filter(message -> message.role() == Role.ASSISTANT)
-                        .collect(Collectors.toList())
-        );
-
-        if (!chat.isReplying() && villagerMessages.isEmpty()){
-            return;
-        } else if (!villagerMessages.isEmpty()){
-            villagerResponse = villagerMessages.get(villagerMessages.size() - 1).content();
-        }
-
         MutableText line = Text.literal(villagerResponse);
 
         String lineStr = line.getString();
@@ -150,7 +176,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     private void drawTextBox(MatrixStack matrices, int mouseX, int mouseY){
         this.nameField.setEditable(true);
-        if (chat.isReplying()){
+        if (isReplying){
             this.nameField.setEditable(false);
         }
 
@@ -188,5 +214,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         this.setInitialFocus(this.nameField);
         this.nameField.setEditable(true);
     }
+
+
 
 }
