@@ -12,6 +12,8 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.util.Hand;
+import za.co.bbd.minecraft.database.Database;
 
 import java.util.Set;
 
@@ -23,6 +25,8 @@ public class NewBackpackScreenHandler extends ScreenHandler{
                                                     Items.LIGHT_BLUE_SHULKER_BOX, Items.LIGHT_GRAY_SHULKER_BOX, Items.LIME_SHULKER_BOX,
                                                     Items.MAGENTA_SHULKER_BOX, Items.ORANGE_SHULKER_BOX, Items.PINK_SHULKER_BOX, Items.RED_SHULKER_BOX,
                                                     Items.WHITE_SHULKER_BOX, Items.YELLOW_SHULKER_BOX, Items.PURPLE_SHULKER_BOX);
+
+    Database db = new Database();
 
     private NewBackpackScreenHandler(ScreenHandlerType<?> type, int syncId, PlayerInventory playerInventory, int rows) {
         this(type, syncId, playerInventory, new SimpleInventory(9 * rows), rows);
@@ -63,6 +67,8 @@ public class NewBackpackScreenHandler extends ScreenHandler{
             this.addSlot(new BackpackSlot(playerInventory, j, 8 + j * 18, 161 + i));
         }
 
+        db.setupConnection();
+
     }
 
     public static class BackpackSlot extends Slot
@@ -94,6 +100,7 @@ public class NewBackpackScreenHandler extends ScreenHandler{
     @Override
     public void onSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity)
     {
+
         // Prevents single or shift-click while pack is open
         if (slotId >= 0)  // slotId < 0 are used for networking internals
         {
@@ -105,8 +112,17 @@ public class NewBackpackScreenHandler extends ScreenHandler{
             }
 
         }
-
         super.onSlotClick(slotId, clickData, actionType, playerEntity);
+
+        if(slotId >= 0 && slotId <= 53){
+            ItemStack stack2 = playerEntity.getStackInHand(Hand.MAIN_HAND);
+            String name2 = stack2.getName().getString();
+            if(name2.equals("Backpack")) { return; }
+            String nbt2 = stack2.getSubNbt("backpack").asString();
+
+            db.setNbt(name2, nbt2);
+        }
+
     }
     public boolean canUse(PlayerEntity player) {
         return this.inventory.canPlayerUse(player);

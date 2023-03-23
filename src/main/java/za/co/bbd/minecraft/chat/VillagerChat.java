@@ -28,7 +28,6 @@ import za.co.bbd.minecraft.misc.Action;
 import za.co.bbd.minecraft.misc.Flag;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
-import za.co.bbd.minecraft.mixin.VillagerEntityMixin;
 
 import java.util.*;
 import java.util.stream.Collectors;

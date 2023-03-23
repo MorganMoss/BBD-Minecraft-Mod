@@ -1,14 +1,15 @@
 package za.co.bbd.minecraft.registry;
 
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
+import za.co.bbd.minecraft.backpack.BackpackItem;
 import za.co.bbd.minecraft.items.RedstoneLinkerItem;
-
 import static za.co.bbd.minecraft.Mod.LOGGER;
 import static za.co.bbd.minecraft.Mod.MOD_ID;
 import static za.co.bbd.minecraft.registry.ModItemGroups.addToItemGroup;
@@ -27,10 +28,14 @@ public class ModItems {
 
     // TODO: Needs a tooltip (could do the same for the receiver block)
     // https://fabricmc.net/wiki/tutorial:tooltip
+    
+    public static final Item BACKPACK = new BackpackItem(new Item.Settings().maxCount(1));
+
     public static final Item REDSTONE_LINKER_ITEM = registerItem(
             "redstone_linker_item",
             new RedstoneLinkerItem(new FabricItemSettings()),
             ItemGroups.REDSTONE, ModItemGroups.BBD);
+
 
     // Initializer
     public static void registerModItems() {
@@ -50,5 +55,12 @@ public class ModItems {
 
         return registeredItem;
     }
+    
+    public static void registerBackpackItem(){
+        ItemGroupEvents.modifyEntriesEvent(ModItemGroups.BBD).register(content -> {
+            content.add(BACKPACK);
+        });
 
+        Registry.register(Registries.ITEM, new Identifier(MOD_ID, "backpack"), BACKPACK);
+    }
 }
