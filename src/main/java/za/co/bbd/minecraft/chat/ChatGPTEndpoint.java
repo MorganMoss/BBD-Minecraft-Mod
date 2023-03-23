@@ -20,24 +20,21 @@ public class ChatGPTEndpoint {
 
     static {
         Properties properties = new Properties();
-
-        try (final Reader reader = new FileReader(new File(Resources.getResource("config/chat.properties").toURI()))) {
+        try (final InputStream reader = ChatGPTEndpoint.class.getResourceAsStream("chat.properties")){
             properties.load(reader);
-        } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException(e);
+        } catch (IOException | NullPointerException e) {
         }
 
         URL = properties.getProperty("url", "https://api.openai.com/v1/chat/completions");
-        API_KEY = properties.getProperty("api-key");
+        String key = properties.getProperty("api-key", "<insert api key>");
         MODEL = properties.getProperty("model", "gpt-3.5-turbo");
         PRINT_JSON = Boolean.parseBoolean(properties.getProperty("print-json", "false"));
 
-        if (API_KEY == null || API_KEY.equals("<insert api key>")){
-            throw new RuntimeException(
-                    "You require a ChatGPT API key to use this mod!\n"
-                    + "Visit https://platform.openai.com/account/api-keys"
-            );
+        if (key == null || key.equals("<insert api key>")) {
+            key  = "";
         }
+
+        API_KEY = key;
     }
 
     /**

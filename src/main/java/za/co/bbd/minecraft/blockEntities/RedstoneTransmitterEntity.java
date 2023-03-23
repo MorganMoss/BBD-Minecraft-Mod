@@ -7,13 +7,12 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.listener.ClientPlayPacketListener;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.Nullable;
 
 import static za.co.bbd.minecraft.registry.ModBlocks.REDSTONE_TRANSMITTER_BLOCK_ENTITY;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.annotation.Nullable;
 
 public class RedstoneTransmitterEntity extends BlockEntity {
 

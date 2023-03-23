@@ -1,8 +1,6 @@
 package za.co.bbd.minecraft.chat;
 
 import com.google.common.collect.ImmutableSet;
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import kong.unirest.json.JSONException;
 import kong.unirest.json.JSONObject;
 import net.minecraft.client.MinecraftClient;
@@ -22,6 +20,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.TradeOfferList;
 import net.minecraft.village.VillagerProfession;
+import org.jetbrains.annotations.Nullable;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.interfaces.VillagerActor;
 import za.co.bbd.minecraft.interfaces.VillagerChatHolder;
@@ -146,11 +145,12 @@ public class VillagerChat {
 
 
     //Persistent Data
-    @Nonnull private HashMap<String, List<Message>> chats = new HashMap<>();
-    @Nonnull private HashMap<String, Message> memories = new HashMap<>();
-    @Nullable private Message globalMemory = null;
-    @Nonnull private String personality = generatePersonality();
-    @Nonnull private String name = generateName();
+    private HashMap<String, List<Message>> chats = new HashMap<>();
+    private HashMap<String, Message> memories = new HashMap<>();
+    @Nullable
+    private Message globalMemory = null;
+    private String personality = generatePersonality();
+    private String name = generateName();
 
 
     //Flags
@@ -162,17 +162,17 @@ public class VillagerChat {
     /**
      * The lock for the Endpoint call. When False, it is currently waiting for chatGPT to respond.
      */
-    @Nonnull
+    
     public boolean isReplying(){
         return isReplying.getFlag();
     }
 
-    @Nonnull
+    
     public boolean isChatting() {
         return isChatting.getFlag();
     }
 
-    @Nonnull
+    
     public boolean isMemorizing(){
         return isMemorizing.getFlag();
     }
@@ -197,7 +197,7 @@ public class VillagerChat {
         return messenger;
     }
 
-    public static void setCurrentMessenger(@Nonnull VillagerChat currentMessenger) {
+    public static void setCurrentMessenger(VillagerChat currentMessenger) {
         VillagerChat.currentMessenger = currentMessenger;
     }
 
@@ -207,7 +207,7 @@ public class VillagerChat {
      * Gets the history of the player currently interacting with this messengers' villager.
      * @return Players chat history
      */
-    @Nonnull
+    
     public List<Message> getChat(){
         if (!updateCustomer()){
             throw new RuntimeException("There is no customer interacting with this villager!");
@@ -263,7 +263,7 @@ public class VillagerChat {
     /**
      * updates the chat of this villager's current customer
      */
-    private void updateChat(@Nonnull Message newMessage){
+    private void updateChat(Message newMessage){
         var chat = chats.getOrDefault(customerName, new ArrayList<>());
         chat.add(newMessage);
         chats.put(customerName, chat);
@@ -273,7 +273,7 @@ public class VillagerChat {
      * updates the memories of this villager's current customer
      * clears their previous chat history of that customer
      */
-    private void updateMemories(@Nonnull Message newMessage){
+    private void updateMemories(Message newMessage){
         memories.put(customerName, newMessage);
         chats.get(customerName).clear();
     }
@@ -284,7 +284,7 @@ public class VillagerChat {
      * The player interacting with this messenger's villager says something to that villager.
      * @param content the message from the player.
      */
-    public void respond(@Nonnull String content){
+    public void respond(String content){
         content = JSONObject.quote(content+ " (In Minecraft; Keep your answer short)");
         content = content.substring(1, content.length()-1);
 
@@ -357,7 +357,7 @@ public class VillagerChat {
 
 
     //System Instructions as Natural Language
-    @Nonnull
+    
     private List<Message> getAllCommonLang(){
         List<Message> common_system_messages = new ArrayList<>();
 
@@ -370,7 +370,7 @@ public class VillagerChat {
         return common_system_messages;
     }
 
-    @Nonnull
+    
     private List<Message> getActionPromptAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -385,7 +385,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getChatStarterAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -395,7 +395,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getMemoryPromptAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -406,7 +406,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getGlobalMemoryPromptAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -417,7 +417,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getMemoriesAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -439,7 +439,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getMemoriesOfCustomerAsLang(){
         if (!memories.containsKey(customerName)){
             return new ArrayList<>();
@@ -455,7 +455,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getTradesAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -486,7 +486,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getProfessionAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -519,7 +519,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getCustomerInfoAsLang() {
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -565,7 +565,7 @@ public class VillagerChat {
         return initialMessages;
     }
 
-    @Nonnull
+    
     private List<Message> getBaseInfoAsLang(){
         final Role role = Role.SYSTEM;
         final List<Message> initialMessages = new ArrayList<>();
@@ -610,13 +610,13 @@ public class VillagerChat {
     }
 
     //Generators
-    @Nonnull
+    
     private String generatePersonality(){
         Collections.shuffle(personalities);
         return personalities.get(0);
     }
 
-    @Nonnull
+    
     private String generateName(){
         Collections.shuffle(names);
         return names.get(0);
@@ -706,7 +706,7 @@ public class VillagerChat {
         return data;
     }
 
-    @Nonnull
+    
     public NbtCompound generatePersistentChatGPTData(){
 
         NbtCompound data = new NbtCompound();
@@ -730,7 +730,7 @@ public class VillagerChat {
         return data;
     }
 
-    public void parsePersistentChatGPTData(@Nonnull NbtCompound data){
+    public void parsePersistentChatGPTData(NbtCompound data){
         this.personality = data.getString("personality");
         this.name = data.getString("name");
         this.globalMemory = new Message(Role.SYSTEM, data.getString("global-memory"));
@@ -747,7 +747,7 @@ public class VillagerChat {
         private List<Message> chat;
         protected Flag flag;
 
-        public GetResponse(@Nonnull List<Message> chat, @Nonnull Flag flag) {
+        public GetResponse(List<Message> chat, Flag flag) {
             setName(this.getClass().getSimpleName());
             this.flag = flag;
             this.chat = chat;
@@ -797,7 +797,7 @@ public class VillagerChat {
             updateChat(new Message(Role.ASSISTANT, response));
         }
 
-        public Chat(@Nonnull List<Message> chat, @Nonnull Flag flag) {
+        public Chat(List<Message> chat, Flag flag) {
             super(chat, flag);
         }
 

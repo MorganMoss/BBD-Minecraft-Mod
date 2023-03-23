@@ -10,13 +10,13 @@ import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import za.co.bbd.minecraft.blockEntities.RedstoneTransmitterEntity;
 
 import static za.co.bbd.minecraft.registry.ModBlocks.REDSTONE_RECEIVER_BLOCK;
 
 import java.util.List;
 
-import jakarta.annotation.Nullable;
 
 public class RedstoneTransmitterBlock extends Block implements BlockEntityProvider {
 
