@@ -1,13 +1,11 @@
 package za.co.bbd.minecraft.chat;
 
-import com.google.common.io.Resources;
 import kong.unirest.*;
 import kong.unirest.json.JSONObject;
 import za.co.bbd.minecraft.Mod;
 import za.co.bbd.minecraft.misc.Message;
 
 import java.io.*;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
