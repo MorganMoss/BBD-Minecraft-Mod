@@ -10,11 +10,14 @@ import net.minecraft.util.math.BlockPos;
 
 import static za.co.bbd.minecraft.registry.ModBlocks.REDSTONE_TRANSMITTER_BLOCK_ENTITY;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.annotation.Nullable;
 
 public class RedstoneTransmitterEntity extends BlockEntity {
 
-  private BlockPos target = new BlockPos(0, 0, 0);
+  private List<BlockPos> targets = new ArrayList<BlockPos>();
 
   public RedstoneTransmitterEntity(BlockPos pos, BlockState state) {
     super(REDSTONE_TRANSMITTER_BLOCK_ENTITY, pos, state);
@@ -22,16 +25,24 @@ public class RedstoneTransmitterEntity extends BlockEntity {
 
   @Override
   public void writeNbt(NbtCompound nbt) {
-    int[] pos = { target.getX(), target.getY(), target.getZ() };
-    nbt.putIntArray("target", pos);
+    int[] positions = new int[this.targets.size() * 3];
+    for (int i = 0; i < this.targets.size(); i++) {
+      positions[(i * 3)] = this.targets.get(i).getX();
+      positions[(i * 3) + 1] = this.targets.get(i).getY();
+      positions[(i * 3) + 2] = this.targets.get(i).getZ();
+    }
+    nbt.putIntArray("targets", positions);
     super.writeNbt(nbt);
   }
 
   @Override
   public void readNbt(NbtCompound nbt) {
     super.readNbt(nbt);
-    int[] pos = nbt.getIntArray("target");
-    target = new BlockPos(pos[0], pos[1], pos[2]);
+    int[] positions = nbt.getIntArray("targets");
+    this.targets = new ArrayList<BlockPos>();
+    for (int i = 0; i < positions.length / 3; i++) {
+      this.targets.add(new BlockPos(positions[(i * 3)], positions[(i * 3) + 1], positions[(i * 3) + 2]));
+    }
   }
 
   @Nullable
@@ -45,12 +56,12 @@ public class RedstoneTransmitterEntity extends BlockEntity {
     return createNbt();
   }
 
-  public void setTarget(BlockPos pos) {
-    this.target = pos;
+  public void setTargets(List<BlockPos> positions) {
+    this.targets = positions;
     markDirty();
   }
 
-  public BlockPos getTarget() {
-    return this.target;
+  public List<BlockPos> getTargets() {
+    return this.targets;
   }
 }

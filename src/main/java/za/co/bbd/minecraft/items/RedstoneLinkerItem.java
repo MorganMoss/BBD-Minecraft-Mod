@@ -1,5 +1,11 @@
 package za.co.bbd.minecraft.items;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
+import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemUsageContext;
@@ -15,11 +21,11 @@ import za.co.bbd.minecraft.blocks.RedstoneTransmitterBlock;
 
 public class RedstoneLinkerItem extends Item {
 
-  private BlockPos storedPosition;
+  private HashSet<BlockPos> storedPositions;
 
   public RedstoneLinkerItem(Item.Settings settings) {
     super(settings);
-    this.storedPosition = new BlockPos(0, 0, 0);
+    this.storedPositions = new HashSet<BlockPos>();
   }
 
   @Override
@@ -27,26 +33,37 @@ public class RedstoneLinkerItem extends Item {
     BlockPos blockPos = context.getBlockPos();
     World world = context.getWorld();
     PlayerEntity playerEntity = context.getPlayer();
+    BlockEntity blockEntity = world.getBlockEntity(blockPos);
+    Block block = world.getBlockState(blockPos).getBlock();
 
-    if (world.getBlockState(blockPos).getBlock() instanceof RedstoneReceiverBlock) {
+    // Add Receiver to list
+    if (block instanceof RedstoneReceiverBlock) {
       world.playSound(playerEntity, blockPos, SoundEvents.BLOCK_RESPAWN_ANCHOR_CHARGE, SoundCategory.BLOCKS, 1.0f,
           1.0f);
       if (world.isClient) {
-        playerEntity.sendMessage(Text.literal("Receiver Location " + blockPos.toShortString() + " copied!"));
+        playerEntity.sendMessage(Text.literal("Receiver Location added!"));
       }
-      this.storedPosition = blockPos;
-    } else if (world.getBlockState(blockPos).getBlock() instanceof RedstoneTransmitterBlock) {
+      this.storedPositions.add(blockPos);
+
+      // Store List in Transmitter
+    } else if (block instanceof RedstoneTransmitterBlock) {
       world.playSound(playerEntity, blockPos, SoundEvents.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, SoundCategory.BLOCKS, 1.0f,
           1.0f);
+
+      ((RedstoneTransmitterEntity) blockEntity).setTargets(List.copyOf(this.storedPositions));
+      if (!world.isClient)
+        this.storedPositions.clear();
+
       if (world.isClient) {
         playerEntity
             .sendMessage(
-                Text.literal("Receiver Location " + storedPosition.toShortString() + " loaded into Transmitter!"));
+                Text.literal("Receiver Locations loaded into Transmitter!"));
       }
-      ((RedstoneTransmitterEntity) world.getBlockEntity(blockPos)).setTarget(storedPosition);
+
+      // Check List
     } else {
       if (world.isClient) {
-        playerEntity.sendMessage(Text.literal("Current Copied Location: " + storedPosition.toShortString()));
+        playerEntity.sendMessage(Text.literal("Current Receiver list:" + storedPositions));
       }
     }
 
