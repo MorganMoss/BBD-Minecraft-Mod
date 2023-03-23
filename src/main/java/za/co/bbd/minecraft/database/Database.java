@@ -34,7 +34,7 @@ public class Database {
     public void setNbt(String name, String nbt) {
         try {
             Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("INSERT INTO public.backs (name, nbt) VALUES ('" + name.replace("'", "\\'") + "', '" + nbt.replace("'", "\\'") + "') ON CONFLICT (name) DO UPDATE SET nbt='" + nbt.replace("'", "\\'") + "';");
+            stmt.executeQuery("INSERT INTO public.backs (name, nbt) VALUES ('" + name.replace("'", "\\'") + "', '" + nbt.replace("'", "\\'") + "') ON CONFLICT (name) DO UPDATE SET nbt='" + nbt.replace("'", "\\'") + "';");
         } catch (Exception e) {
             System.out.println(e);
         }

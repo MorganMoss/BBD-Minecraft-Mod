@@ -6,7 +6,6 @@ import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.StringNbtReader;
-import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import za.co.bbd.minecraft.database.Database;
 
