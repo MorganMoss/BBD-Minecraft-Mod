@@ -6,15 +6,15 @@
     "I": {
       "item": "minecraft:iron_ingot"
     },
-    "R": {
-      "item": "minecraft:redstone"
+    "L": {
+      "item": "minecraft:lapis_lazuli"
     },
     "T": {
       "item": "bbd:redstone_linker_item"
     }
   },
-  "pattern": ["IRI", "RTR", "IRI"],
+  "pattern": ["ILI", "LTL", "ILI"],
   "result": {
-    "item": "bbd:redstone_receiver_block"
+    "item": "bbd:redstone_transmitter_block"
   }
 }

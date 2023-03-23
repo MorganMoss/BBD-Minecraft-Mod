@@ -14,27 +14,27 @@ import static za.co.bbd.minecraft.Mod.LOGGER;
 import static za.co.bbd.minecraft.Mod.MOD_ID;
 
 public class ModItemGroups {
-    //Item Groups
+    // Item Groups
     public static ItemGroup BBD;
 
-    //Initializer
+    // Initializer
     public static void registerModItemGroups() {
         LOGGER.info("Registering Mod Item Groups for " + MOD_ID);
         BBD = FabricItemGroup
                 .builder(new Identifier(MOD_ID, "bbd"))
                 .displayName(Text.translatable("itemgroup.bbd"))
-                //TODO: Change this to a custom icon rather than the icon of an item
-                .icon(() -> new ItemStack(ModItems.REDSTONE_TRANSMITTER_ITEM))
+                // TODO: Change this to a custom icon rather than the icon of an item
+                .icon(() -> new ItemStack(ModItems.REDSTONE_LINKER_ITEM))
                 .build();
     }
 
-    //Helper Methods (Package Private)
-    static void addToItemGroup(Item item, ItemGroup group){
+    // Helper Methods (Package Private)
+    static void addToItemGroup(Item item, ItemGroup group) {
         ItemGroupEvents.modifyEntriesEvent(group).register(entries -> entries.add(item));
 
     }
 
-    static void addToItemGroup(Item item, ItemGroup...groups){
+    static void addToItemGroup(Item item, ItemGroup... groups) {
         Arrays.stream(groups).forEach(itemGroup -> addToItemGroup(item, itemGroup));
     }
 }

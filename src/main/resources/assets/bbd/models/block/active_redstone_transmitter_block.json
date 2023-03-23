@@ -1,0 +1,6 @@
+{
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "bbd:block/active_redstone_transmitter_block"
+  }
+}

@@ -1,13 +1,16 @@
 package za.co.bbd.minecraft.chat;
 
+import com.google.common.collect.ImmutableSet;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import kong.unirest.json.JSONException;
+import kong.unirest.json.JSONObject;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -26,6 +29,7 @@ import za.co.bbd.minecraft.misc.Action;
 import za.co.bbd.minecraft.misc.Flag;
 import za.co.bbd.minecraft.misc.Message;
 import za.co.bbd.minecraft.misc.Role;
+import za.co.bbd.minecraft.mixin.VillagerEntityMixin;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -129,7 +133,7 @@ public class VillagerChat {
             "Finn", "Eden", "Dylan", "Cassidy", "Brinley"
             );
 
-    private static final float VISION_RADIUS = 50;
+    private static final float VISION_RADIUS = 10;
 
     //Active Chat
     private static VillagerChat currentMessenger = null;
@@ -235,7 +239,6 @@ public class VillagerChat {
             return;
         }
         isChatting.setFlag(false);
-
         memorize();
     }
 
@@ -261,9 +264,9 @@ public class VillagerChat {
      * updates the chat of this villager's current customer
      */
     private void updateChat(@Nonnull Message newMessage){
-        var c = chats.getOrDefault(customerName, new ArrayList<>());
-        c.add(newMessage);
-        chats.put(customerName, c);
+        var chat = chats.getOrDefault(customerName, new ArrayList<>());
+        chat.add(newMessage);
+        chats.put(customerName, chat);
     }
 
     /**
@@ -282,10 +285,13 @@ public class VillagerChat {
      * @param content the message from the player.
      */
     public void respond(@Nonnull String content){
+        content = JSONObject.quote(content+ " (In Minecraft; Keep your answer short)");
+        content = content.substring(1, content.length()-1);
+
         List<Message> system_messages = getAllCommonLang();
 
         List<Message> customer_messages = getChat();
-        customer_messages.add(new Message(Role.USER, content + " (In Minecraft; Keep your answer short)"));
+        customer_messages.add(new Message(Role.USER, content ));
 
         List<Message> combined_messages = new ArrayList<>();
         combined_messages.addAll(system_messages);
@@ -464,6 +470,8 @@ public class VillagerChat {
                 .collect(Collectors.toList());
 
         initialMessages.add(new Message(role,"You have the following trades: " + trades));
+
+
         if (!entities.isEmpty()){
             initialMessages.add(new Message(role,"There are a few nearby villagers:"));
             initialMessages.addAll(
@@ -474,8 +482,6 @@ public class VillagerChat {
                             .collect(Collectors.toList())
             );
         }
-
-
 
         return initialMessages;
     }
@@ -489,6 +495,17 @@ public class VillagerChat {
             initialMessages.add(new Message(role, "You have no profession"));
         } else {
             initialMessages.add(new Message(role, "You have the profession of a/an " + villager.getVillagerData().getProfession().toString()));
+        }
+
+        ImmutableSet<Item> wants = villager.getVillagerData().getProfession().gatherableItems();
+
+        if (!wants.isEmpty()){
+            String wantsAsStr = wants
+                    .stream()
+                    .map(item -> item.getName().getString())
+                    .collect(Collectors.joining(", "));
+
+            initialMessages.add(new Message(role, "As part of your profession you collect: " + wantsAsStr));
         }
 
         switch (villager.getVillagerData().getLevel()) {
@@ -534,7 +551,7 @@ public class VillagerChat {
         } else if (reputation <= -5) {
             initialMessages.add(new Message(role, customerName + " is unpleasant"));
         } else {
-            initialMessages.add(new Message(role, "You are neutral to " + customerName));
+//            initialMessages.add(new Message(role, "You are neutral to " + customerName));
         }
 
 
@@ -747,7 +764,7 @@ public class VillagerChat {
 
             String result = "";
             try {
-                var response = ChatGPTEndpoint.post(chat);
+                var response = ChatGPTEndpoint.post(this.chat);
 
                 result = response
                         .getBody()
@@ -818,12 +835,12 @@ public class VillagerChat {
 
         @Override
         protected void onFinish(String response) {
-            ((VillagerActor) villager).performAction(
-                    Arrays
+            Action action = Arrays
                     .stream(Action.values())
-                    .filter(action -> response.toLowerCase().contains(action.action))
-                    .findFirst().orElse(Action.DO_NOTHING)
-            );
+                    .filter(act -> response.toLowerCase().contains(act.action))
+                    .findFirst().orElse(Action.DO_NOTHING);
+            ((VillagerActor) villager).performAction(action);
+            updateChat(new Message(Role.SYSTEM, "You chose to " + action.action));
         }
     }
 }

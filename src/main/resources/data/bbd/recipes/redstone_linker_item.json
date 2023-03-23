@@ -12,14 +12,8 @@
       "item": "minecraft:redstone"
     }
   },
-  "pattern": [
-    "IRI",
-    "RDR",
-    " I "
-  ],
+  "pattern": ["IRI", "RDR", " I "],
   "result": {
-    "item": "bbd:redstone_transmitter_item"
+    "item": "bbd:redstone_linker_item"
   }
 }
-
-
