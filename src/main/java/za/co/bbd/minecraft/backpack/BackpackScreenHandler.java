@@ -12,6 +12,7 @@ import net.minecraft.screen.GenericContainerScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
+import net.minecraft.text.Text;
 import za.co.bbd.minecraft.registry.BackpackClient;
 
 import java.util.Set;
@@ -101,6 +102,7 @@ public class BackpackScreenHandler extends GenericContainerScreenHandler{
     @Override
     public void onSlotClick(int slotId, int clickData, SlotActionType actionType, PlayerEntity playerEntity) {
         // Prevents single or shift-click while pack is open
+        playerEntity.sendMessage(Text.literal("test"));
         if (slotId >= 0) {
             ItemStack stack = getSlot(slotId).getStack();
 
