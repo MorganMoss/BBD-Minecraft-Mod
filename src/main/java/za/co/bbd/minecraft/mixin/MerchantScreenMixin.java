@@ -3,6 +3,7 @@ package za.co.bbd.minecraft.mixin;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.screen.ingame.MerchantScreen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -139,6 +140,16 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
                 new Identifier(ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + this.client.player.getUuidAsString())
         );
         isReplying = true;
+    }
+
+
+    @Override
+    public void resize(MinecraftClient client, int width, int height) {
+//        super.resize(client, width, height);
+        super.init(client, width, height);
+        String text = this.nameField.getText();
+        setupTextBox();
+        this.nameField.setText(text);
     }
 
     //Draw Helper Methods
