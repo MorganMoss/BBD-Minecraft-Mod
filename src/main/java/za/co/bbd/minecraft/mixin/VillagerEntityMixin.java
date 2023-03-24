@@ -55,7 +55,6 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
         if (!world.isClient) {
             if (!chat.isMemorizing()) {
                 //Start chat when the client is able to receive
-                chat.startChat();
 
                 ServerPlayNetworking.registerGlobalReceiver(
                         new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + getCustomer().getUuidAsString()),
@@ -63,6 +62,8 @@ public abstract class VillagerEntityMixin extends MerchantEntity implements Vill
                 );
 
                 Mod.LOGGER.info("Started Listening on " + ModIdentifiers.CHAT_PLAYER_IDENTIFIER + getCustomer().getUuidAsString());
+
+                chat.startChat();
             }
         }
     }

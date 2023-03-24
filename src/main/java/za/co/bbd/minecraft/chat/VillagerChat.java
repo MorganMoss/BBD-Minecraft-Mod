@@ -262,6 +262,11 @@ public class VillagerChat {
         chats.put(customerName, chat);
 
         if (newMessage.role().equals(Role.ASSISTANT)){
+            while (!ServerPlayNetworking.canSend(
+                    (ServerPlayerEntity) customer,
+                    new Identifier(ModIdentifiers.CHAT_VILLAGER_IDENTIFIER + customer.getUuidAsString())
+            )) {}
+
             PacketByteBuf packet = PacketByteBufs.create();
 
             packet.writeString(newMessage.content());

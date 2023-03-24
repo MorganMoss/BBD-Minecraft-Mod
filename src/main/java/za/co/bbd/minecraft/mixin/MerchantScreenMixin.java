@@ -58,7 +58,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
                         new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + this.client.player.getUuidAsString()))
                 ) {
                     if (i == 99){
-                        client.execute(this.client.player::closeHandledScreen);
+                        client.execute(this::close);
                         Mod.LOGGER.info(List.of(ClientPlayNetworking.getSendable()).toString());
                         return;
                     }
@@ -102,7 +102,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
         this.nameField.tick();
 
         if (!isReplying && !ClientPlayNetworking.canSend(new Identifier(ModIdentifiers.CHAT_PLAYER_IDENTIFIER + this.client.player.getUuidAsString()))) {
-            client.execute(this.client.player::closeHandledScreen);
+            client.execute(this::close);
 
         }
     }
@@ -124,7 +124,7 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
-            this.client.player.closeHandledScreen();
+            this.close();
         }
         if (this.nameField.keyPressed(keyCode, scanCode, modifiers) || this.nameField.isActive()) {
             return true;
@@ -145,7 +145,6 @@ public abstract class MerchantScreenMixin extends HandledScreen<MerchantScreenHa
 
     @Override
     public void resize(MinecraftClient client, int width, int height) {
-//        super.resize(client, width, height);
         super.init(client, width, height);
         String text = this.nameField.getText();
         setupTextBox();
